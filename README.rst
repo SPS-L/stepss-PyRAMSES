@@ -24,7 +24,7 @@ Overview
 
 PyRAMSES enables scripted power system dynamic simulations from Python or Jupyter notebooks. It exposes the full capability of the RAMSES solver through a clean Python API, with pre-compiled binaries bundled for Windows and Linux — no separate solver installation required.
 
-RAMSES (RApid Multiprocessor Simulation of Electric power Systems) simulates the dynamic evolution of power systems under the phasor approximation, using Backward Euler, Trapezoidal, or BDF2 integration with OpenMP parallelism.
+RAMSES (RApid Multithreaded Simulation of Electric power Systems) simulates the dynamic evolution of power systems under the phasor approximation, using Backward Euler, Trapezoidal, or BDF2 integration with OpenMP parallelism.
 
 Key Features
 ------------

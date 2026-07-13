@@ -412,12 +412,17 @@ class cfg(object):
            >>> case.addRunObs('RT RT')
            
         - BPE/BQE/BPO/BQO BRANCH_NAME: Branch active (P), reactive (Q) power at the origin (O) or extremity (E) of a branch::
-        
-           >>> case.addRunObs('BPE 1041-01') # active power at the origin of branch 1041-01
-        
+
+           >>> case.addRunObs('BPO 1041-01') # active power at the origin of branch 1041-01
+           >>> case.addRunObs('BPE 1041-01') # active power at the extremity of branch 1041-01
+
         - ON INJECTOR_NAME OBSERVABLE_NAME: Monitor a named observable from an injector ::
 
            >>> case.addRunObs('ON WT1a Pw') # observable Pw from injector WT1a
+
+        - TO TWOP_NAME OBSERVABLE_NAME: Monitor a named observable from a two-port ::
+
+           >>> case.addRunObs('TO hvdc1 P1') # observable P1 from two-port hvdc1
 
 
         """
