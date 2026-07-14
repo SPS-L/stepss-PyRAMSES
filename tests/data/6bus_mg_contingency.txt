@@ -1,0 +1,14 @@
+Trip line B-C
+BT
+B-C
+end_contingency
+Trip generator F
+GT
+F
+end_contingency
+Double fault B-C and gen F
+BT
+B-C
+GT
+F
+end_contingency

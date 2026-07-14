@@ -1,0 +1,40 @@
+! SPDX-License-Identifier: LGPL-3.0-or-later
+! STEPSS-Helios example data file
+! Documentation: https://stepss.sps-lab.org/user-guide/pfc/
+!
+! 6-bus microgrid system
+
+# $PARAM value ; -- solver parameter (see documentation for all $PARAM keywords)
+$TOLAC   0.01 ;
+$TOLREAC 0.01 ;
+$NBITMA  20 ;
+$MISBLOC  0.01 ;
+$MISADJ   0.01 ;
+$MISQLIM  0.01 ;
+$PLIM 1 ;
+$DIVDET 0. ;
+
+# BUS name Vnom(kV) Pload(MW) Qload(Mvar) Bshunt(Mvar) Qshunt(Mvar) ;
+BUS       A      6.     0.0      0.0     0.0     0.0   ;
+BUS       B     11.     0.0      0.0     0.0     0.0   ;
+BUS       C     11.     0.0      0.0     0.0     0.0   ;
+BUS       D      6.     1.0      0.3     0.0     0.0   ;
+BUS       E      6.     4.0      1.2     0.0     0.0   ;
+BUS       F      6.     0.0      0.0     0.0     0.0   ;
+
+# LINE name busA busB R(%) X(%) B(%) Srated(MVA) status ;
+LINE     'B-C'  B  C 0.25 0.13 0 5 1 ;
+LINE     'D-E'  D  E 0.25 0.13 0 5 1 ;
+
+# TRANSFO name busA busB R(%) X(%) B1(%) B2(%) ratio(%) phase(deg) Srated(MVA) status ;
+TRANSFO  'D-B'  D  B  0.  10.  0.  0.  100.  0.  5.  1 ;
+TRANSFO  'E-C'  E  C  0.  10.  0.  0.  100.  0.  5.  1 ;
+TRANSFO  'A-B'  A  B  0.  10.  0.  0.  100.  0.  5.  1 ;
+TRANSFO  'F-B'  F  B  0.  10.  0.  0.  100.  0.  5.  1 ;
+
+# GENER name bus excbus Pg(MW) Qg(Mvar) Vsetpt(pu) Snom(MVA) Qmin(Mvar) Qmax(Mvar) status ;
+GENER     A  A  A 0. 0. 1.0  5. -9990.  9999. 1 ;
+GENER     F  F  F 2. 0. 1.0  3. -9990.  9999. 1 ;
+   
+# SLACK busname ;
+SLACK     A     ;

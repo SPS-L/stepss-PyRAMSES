@@ -14,7 +14,7 @@ cd src && pip install -e .
 cd src && python setup.py sdist bdist_wheel
 ```
 
-There is **no test suite or linter configured**. Validate changes against one of the example repositories:
+A pytest suite covers the helios power-flow module (`tests/`, run with `pytest tests/` after `pip install ./src pytest`; CI runs it on Linux/Windows/macOS via `.github/workflows/tests.yml`). The RAMSES side has **no test suite or linter configured** — validate RAMSES changes against one of the example repositories:
 
 - Nordic test system: `git@github.com:SPS-L/Nordic_JhubStart.git`
 - 5-bus test system: `git@github.com:SPS-L/5_bus_test_system.git`
@@ -94,6 +94,8 @@ For model-specific observables (exciters, governors, injectors, two-ports, DCTLs
 
 ### Private vs Public Members
 Private attributes use a leading underscore (`_dataset`, `_ramseslib`). All public methods use camelCase (`addData`, `getBusVolt`, `execSim`). The class names themselves are lowercase (`sim`, `cfg`, `extractor`).
+
+Exception: the `pyramses.helios` module (Helios power-flow interface) **deliberately** uses PEP 8 snake_case (`HeliosSession`, `load_file`, `get_bus_voltage`). Do not "fix" it to camelCase, and do not convert the RAMSES classes to snake_case.
 
 ### ctypes Interop
 `simulator.py` parses `src/pyramses/libs/ramses.h` at import time to set C function signatures. String arguments must be encoded to bytes before passing to ctypes; return strings are decoded from bytes. See existing `sim` methods for the pattern.

@@ -1,0 +1,882 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Creator: fig2dev.exe Version 3.2 Patchlevel 5d WinFIG version 3 (08/08/2011) by Andreas Schmidt -->
+
+<!-- CreationDate: Sun Feb 23 09:36:21 2014 -->
+
+<!-- Magnification: 1.000 -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="9.9in"
+   height="5.3in"
+   viewBox="1139 258 11891 6392"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   sodipodi:docname="6bus_mg.svg">
+  <metadata
+     id="metadata204">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs202" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="2880"
+     inkscape:window-height="1526"
+     id="namedview200"
+     showgrid="false"
+     inkscape:zoom="2.0000001"
+     inkscape:cx="470.80472"
+     inkscape:cy="250.69894"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g10" />
+  <desc
+     id="desc4"> Created by WinFIG version 4.71 </desc>
+  <desc
+     id="desc6"> METADATA <version
+   id="version8">1.0</version>
+</desc>
+  <g
+     style="fill:none;stroke-width:0.025in"
+     id="g10">
+    <!-- Ellipse -->
+    <!--  METADATA <id>1</id>  -->
+    <ellipse
+       transform="translate(2572,4462)"
+       rx="341"
+       ry="340"
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="ellipse12"
+       cx="0"
+       cy="0" />
+    <!-- Ellipse -->
+    <!--  METADATA <id>21</id>  -->
+    <ellipse
+       transform="translate(2448,2342)"
+       rx="341"
+       ry="339"
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="ellipse14"
+       cx="0"
+       cy="0" />
+    <!-- Ellipse -->
+    <!--  METADATA <id>23</id>  -->
+    <ellipse
+       transform="translate(10542,4462)"
+       rx="341"
+       ry="340"
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="ellipse16"
+       cx="0"
+       cy="0" />
+    <!-- Ellipse -->
+    <!--  METADATA <id>34</id>  -->
+    <ellipse
+       transform="translate(10542,4141)"
+       rx="341"
+       ry="339"
+       style="stroke:#000000;stroke-width:31.40723157;stroke-miterlimit:4;stroke-dasharray:none"
+       id="ellipse18"
+       cx="0"
+       cy="0" />
+    <!-- Ellipse -->
+    <!--  METADATA <id>37</id>  -->
+    <ellipse
+       transform="translate(2448,2664)"
+       rx="341"
+       ry="339"
+       style="stroke:#000000;stroke-width:31.40723157;stroke-miterlimit:4;stroke-dasharray:none"
+       id="ellipse20"
+       cx="0"
+       cy="0" />
+    <!-- Ellipse -->
+    <!--  METADATA <id>38</id>  -->
+    <ellipse
+       transform="translate(2572,4141)"
+       rx="341"
+       ry="339"
+       style="stroke:#000000;stroke-width:31.40723157;stroke-miterlimit:4;stroke-dasharray:none"
+       id="ellipse22"
+       cx="0"
+       cy="0" />
+    <!-- Text -->
+    <!--  METADATA <id>99</id>  -->
+    <text
+       xml:space="preserve"
+       x="4202"
+       y="1865"
+       font-style="normal"
+       font-weight="bold"
+       font-size="204"
+       id="text24"
+       style="font-style:normal;font-weight:bold;font-size:214.4066925px;line-height:0;font-family:Helvetica;text-anchor:start;fill:#008f8f">F</text>
+    <!-- Ellipse -->
+    <!--  METADATA <id>98</id>  -->
+    <ellipse
+       transform="translate(4972,2342)"
+       rx="341"
+       ry="339"
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="ellipse26"
+       cx="0"
+       cy="0" />
+    <!-- Ellipse -->
+    <!--  METADATA <id>101</id>  -->
+    <ellipse
+       transform="translate(4972,2664)"
+       rx="341"
+       ry="339"
+       style="stroke:#000000;stroke-width:31.40723157;stroke-miterlimit:4;stroke-dasharray:none"
+       id="ellipse28"
+       cx="0"
+       cy="0" />
+    <!-- Text -->
+    <!--  METADATA <id>35</id>  -->
+    <text
+       xml:space="preserve"
+       x="9267"
+       y="1626"
+       font-style="normal"
+       font-weight="normal"
+       font-size="204"
+       id="text30"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ffd600">voltage phase angles (deg)</text>
+    <!-- Line -->
+    <!--  METADATA <id>2</id>  -->
+    <polyline
+       points="11034,4730 11034,5145 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline32" />
+    <!-- Arrowhead on XXXpoint 11034 5145 - 11034 4698-->
+    <polyline
+       points="11062 4863 11034 4719 11005 4863 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline34" />
+    <!-- Line -->
+    <!--  METADATA <id>8</id>  -->
+    <polyline
+       points="9354,5865 8874,5865 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline36" />
+    <!-- Arrowhead on XXXpoint 9354 5865 - 8843 5865-->
+    <polyline
+       points="9002 5829 8860 5865 9002 5900 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline38" />
+    <!-- Line -->
+    <!--  METADATA <id>9</id>  -->
+    <polyline
+       points="3268,5840 3763,5840 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline40" />
+    <!-- Arrowhead on XXXpoint 3268 5840 - 3795 5840-->
+    <polyline
+       points="3635 5875 3778 5840 3635 5804 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline42" />
+    <!-- Line -->
+    <!--  METADATA <id>13</id>  -->
+    <polyline
+       points="2990,5355 2990,5696 9900,5700 9902,5367 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline44" />
+    <!-- Line -->
+    <!--  METADATA <id>19</id>  -->
+    <polyline
+       points="1936,1605 2961,1605 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline46" />
+    <!-- Line -->
+    <!--  METADATA <id>20</id>  -->
+    <polyline
+       points="2446,1177 2448,2021 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline48" />
+    <!-- Line -->
+    <!--  METADATA <id>22</id>  -->
+    <polyline
+       points="2570,4799 2560,5353 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline50" />
+    <!-- Line -->
+    <!--  METADATA <id>24</id>  -->
+    <polyline
+       points="10564,4799 10568,5355 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline52" />
+    <!-- Line -->
+    <!--  METADATA <id>28</id>  -->
+    <polyline
+       points="1742,1001 1742,1464 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline54"
+       transform="translate(187.60587,-13.400418)" />
+    <!-- Arrowhead on XXXpoint 1742 1001 - 1742 1496-->
+    <polyline
+       points="1706 1336 1742 1479 1777 1336 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline56"
+       transform="translate(187.60587)" />
+    <!-- Line -->
+    <!--  METADATA <id>29</id>  -->
+    <polyline
+       points="5994,2745 6489,2745 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline58" />
+    <!-- Arrowhead on XXXpoint 5994 2745 - 6521 2745-->
+    <polyline
+       points="6361 2780 6504 2745 6361 2709 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline60" />
+    <!-- Line -->
+    <!--  METADATA <id>30</id>  -->
+    <polyline
+       points="9795,2805 9315,2805 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline62" />
+    <!-- Arrowhead on XXXpoint 9795 2805 - 9284 2805-->
+    <polyline
+       points="9443 2769 9301 2805 9443 2840 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline64" />
+    <!-- Line -->
+    <!--  METADATA <id>31</id>  -->
+    <polyline
+       points="1984,3545 1984,3960 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline66"
+       transform="translate(53.601676)" />
+    <!-- Arrowhead on XXXpoint 1984 3545 - 1984 3992-->
+    <polyline
+       points="1948 3832 1984 3975 2019 3832 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline68"
+       transform="translate(53.601676)" />
+    <!-- Line -->
+    <!--  METADATA <id>36</id>  -->
+    <!--  METADATA <link srcPointIdx=1 targetObjId=38 targetLeftPointIdx=-1/>  -->
+    <polyline
+       points="2574,3300 2573,3802 "
+       style="stroke:#000000;stroke-width:31.40723157;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline70" />
+    <!-- Line -->
+    <!--  METADATA <id>39</id>  -->
+    <polyline
+       points="10543,3385 10543,3783 "
+       style="stroke:#000000;stroke-width:31.40723157;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline72" />
+    <!-- Text -->
+    <!--  METADATA <id>33</id>  -->
+    <text
+       xml:space="preserve"
+       x="7975.5039"
+       y="903.98212"
+       font-style="normal"
+       font-weight="normal"
+       font-size="204"
+       id="text74"
+       style="font-style:normal;font-weight:normal;font-size:204px;line-height:0;font-family:Helvetica;text-anchor:start;fill:#000000">6 kV</text>
+    <!-- Text -->
+    <!--  METADATA <id>32</id>  -->
+    <text
+       xml:space="preserve"
+       x="9267"
+       y="1258"
+       font-style="normal"
+       font-weight="normal"
+       font-size="204"
+       id="text76"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ff0000">voltage magnitudes (pu)</text>
+    <!-- Text -->
+    <!--  METADATA <id>27</id>  -->
+    <text
+       xml:space="preserve"
+       x="9674"
+       y="3497"
+       font-style="normal"
+       font-weight="bold"
+       font-size="204"
+       id="text78"
+       style="font-style:normal;font-weight:bold;font-size:214.4066925px;line-height:0;font-family:Helvetica;text-anchor:start;fill:#008f8f">C</text>
+    <!-- Text -->
+    <!--  METADATA <id>26</id>  -->
+    <text
+       xml:space="preserve"
+       x="1744"
+       y="3225"
+       font-style="normal"
+       font-weight="bold"
+       font-size="204"
+       id="text80"
+       style="font-style:normal;font-weight:bold;font-size:214.4066925px;line-height:0;font-family:Helvetica;text-anchor:start;fill:#008f8f">B</text>
+    <!-- Text -->
+    <!--  METADATA <id>25</id>  -->
+    <text
+       xml:space="preserve"
+       x="1678"
+       y="1865"
+       font-style="normal"
+       font-weight="bold"
+       font-size="204"
+       id="text82"
+       style="font-style:normal;font-weight:bold;font-size:214.4066925px;line-height:0;font-family:Helvetica;text-anchor:start;fill:#008f8f">A</text>
+    <!-- Text -->
+    <!--  METADATA <id>17</id>  -->
+    <text
+       xml:space="preserve"
+       x="11338"
+       y="5481"
+       font-style="normal"
+       font-weight="bold"
+       font-size="204"
+       id="text84"
+       style="font-style:normal;font-weight:bold;font-size:214.4066925px;line-height:0;font-family:Helvetica;text-anchor:start;fill:#008f8f">E</text>
+    <!-- Text -->
+    <!--  METADATA <id>16</id>  -->
+    <text
+       xml:space="preserve"
+       x="1536"
+       y="5385"
+       font-style="normal"
+       font-weight="bold"
+       font-size="204"
+       id="text86"
+       style="font-style:normal;font-weight:bold;font-size:214.4066925px;line-height:0;font-family:Helvetica;text-anchor:start;fill:#008f8f">D</text>
+    <!-- Text -->
+    <!--  METADATA <id>6</id>  -->
+    <text
+       xml:space="preserve"
+       x="9277"
+       y="541"
+       font-style="normal"
+       font-weight="normal"
+       font-size="204"
+       id="text88"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">active powers (MW)</text>
+    <!-- Line -->
+    <!--  METADATA <id>84</id>  -->
+    <polyline
+       points="2558,5348 2558,6106 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline90" />
+    <!-- Arrowhead on XXXpoint 2558 5348 - 2558 6263-->
+    <polygon
+       points="2558,6247 2593,6104 2522,6104 "
+       style="fill:#000000;stroke:#000000;stroke-width:7;stroke-miterlimit:8"
+       id="polygon92" />
+    <!-- Line -->
+    <!--  METADATA <id>96</id>  -->
+    <polyline
+       points="4460,1605 5485,1605 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline94" />
+    <!-- Line -->
+    <!--  METADATA <id>97</id>  -->
+    <polyline
+       points="4970,1177 4972,2021 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline96" />
+    <!-- Line -->
+    <!--  METADATA <id>100</id>  -->
+    <polyline
+       points="4416,1001 4416,1464 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline98"
+       transform="translate(134.00419)" />
+    <!-- Arrowhead on XXXpoint 4416 1001 - 4416 1496-->
+    <polyline
+       points="4380 1336 4416 1479 4451 1336 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline100"
+       transform="translate(134.00419)" />
+    <!-- Line -->
+    <!--  METADATA <id>108</id>  -->
+    <polyline
+       points="4977,3011 4977,3303 "
+       style="stroke:#000000;stroke-width:31.40723157;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline102" />
+    <!-- Line -->
+    <!--  METADATA <id>110</id>  -->
+    <polyline
+       points="10567,5351 10567,6109 "
+       style="stroke:#000000;stroke-width:6.99753119;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline104" />
+    <!-- Arrowhead on XXXpoint 10567 5351 - 10567 6266-->
+    <polygon
+       points="10567,6250 10602,6107 10531,6107 "
+       style="fill:#000000;stroke:#000000;stroke-width:7;stroke-miterlimit:8"
+       id="polygon106" />
+    <!-- Line -->
+    <!--  METADATA <id>116</id>  -->
+    <polyline
+       points="2441,2990 2438,3308 "
+       style="stroke:#000000;stroke-width:31.40723157;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline108" />
+    <!-- Text -->
+    <!--  METADATA <id>3</id>  -->
+    <!-- Text -->
+    <!--  METADATA <id>4</id>  -->
+    <text
+       xml:space="preserve"
+       x="7875"
+       y="563"
+       font-style="normal"
+       font-weight="normal"
+       font-size="204"
+       id="text112"
+       style="font-style:normal;font-weight:normal;font-size:204px;line-height:0;font-family:Helvetica;text-anchor:start;fill:#000000">11 kV</text>
+    <!-- Text -->
+    <!--  METADATA <id>5</id>  -->
+    <text
+       xml:space="preserve"
+       x="9277"
+       y="893"
+       font-style="normal"
+       font-weight="normal"
+       font-size="204"
+       id="text114"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">reactive powers (Mvar)</text>
+    <!-- Line -->
+    <!--  METADATA <id>74</id>  -->
+    <polyline
+       points="9952,3373 11092,3373 "
+       style="stroke:#000000;stroke-width:31.40723157;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline116" />
+    <!-- Line -->
+    <!--  METADATA <id>73</id>  -->
+    <polyline
+       points="1800,3300 6000,3300 "
+       style="stroke:#000000;stroke-width:31.40723157;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline118"
+       transform="translate(254.60792,1.478681e-6)" />
+    <!-- Line -->
+    <!--  METADATA <id>72</id>  -->
+    <polyline
+       points="5700,3288 5700,2988 10200,2988 10200,3375 "
+       style="stroke:#000000;stroke-width:31.40723157;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline120" />
+    <!-- Line -->
+    <!--  METADATA <id>57</id>  -->
+    <polyline
+       points="11170,5355 9499,5355 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline122" />
+    <!-- Line -->
+    <!--  METADATA <id>56</id>  -->
+    <polyline
+       points="3275,5355 1870,5355 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline124" />
+    <!-- Line -->
+    <!--  METADATA <id>42</id>  -->
+    <polyline
+       points="7059,483 7619,483 "
+       style="stroke:#000000;stroke-width:31.40723157;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none"
+       id="polyline126" />
+    <!-- Line -->
+    <!--  METADATA <id>41</id>  -->
+    <!-- Line -->
+    <!--  METADATA <id>40</id>  -->
+    <polyline
+       points="7059,1427 7619,1427 "
+       style="stroke:#000000;stroke-width:12.56289263;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:5.03225803;stroke-dasharray:none"
+       id="polyline130"
+       transform="translate(25.125785,-603.01894)" />
+    <!-- Ellipse -->
+    <!--  METADATA <id>102</id>  -->
+    <ellipse
+       transform="translate(4984,853)"
+       rx="334"
+       ry="331"
+       style="fill:#cccccc;stroke:#000000;stroke-width:7"
+       id="ellipse132"
+       cx="0"
+       cy="0" />
+    <!-- Text -->
+    <!--  METADATA <id>45</id>  -->
+    <text
+       xml:space="preserve"
+       x="8731.3945"
+       y="5103.1929"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text134"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ff0000">%AE</text>
+    <!-- Text -->
+    <!--  METADATA <id>46</id>  -->
+    <text
+       xml:space="preserve"
+       x="2923"
+       y="1557"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text136"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ff0000">%AA</text>
+    <!-- Text -->
+    <!--  METADATA <id>50</id>  -->
+    <text
+       xml:space="preserve"
+       x="11280"
+       y="5111"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text138"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%EE-C,E</text>
+    <!-- Text -->
+    <!--  METADATA <id>51</id>  -->
+    <text
+       xml:space="preserve"
+       x="8874.8008"
+       y="6540.1992"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text140"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%ED-E,E</text>
+    <!-- Text -->
+    <!--  METADATA <id>52</id>  -->
+    <text
+       xml:space="preserve"
+       x="8880"
+       y="6263"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text142"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">%DD-E,E</text>
+    <!-- Text -->
+    <!--  METADATA <id>53</id>  -->
+    <text
+       xml:space="preserve"
+       x="3194"
+       y="6558"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text144"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%ED-E,D</text>
+    <!-- Text -->
+    <!--  METADATA <id>54</id>  -->
+    <text
+       xml:space="preserve"
+       x="3210"
+       y="6270"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text146"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">%DD-E,D</text>
+    <!-- Text -->
+    <!--  METADATA <id>58</id>  -->
+    <text
+       xml:space="preserve"
+       x="1154"
+       y="1175"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text148"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000ff">%GA</text>
+    <!-- Text -->
+    <!--  METADATA <id>59</id>  -->
+    <text
+       xml:space="preserve"
+       x="1154"
+       y="1463"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text150"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%KA</text>
+    <!-- Text -->
+    <!--  METADATA <id>60</id>  -->
+    <text
+       xml:space="preserve"
+       x="5888"
+       y="2295"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text152"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">%DB-C,B</text>
+    <!-- Text -->
+    <!--  METADATA <id>61</id>  -->
+    <text
+       xml:space="preserve"
+       x="5904"
+       y="2567"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text154"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%EB-C,B</text>
+    <!-- Text -->
+    <!--  METADATA <id>62</id>  -->
+    <text
+       xml:space="preserve"
+       x="9225"
+       y="2355"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text156"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">%DB-C,C</text>
+    <!-- Text -->
+    <!--  METADATA <id>63</id>  -->
+    <text
+       xml:space="preserve"
+       x="9225"
+       y="2611"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text158"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%EB-C,C</text>
+    <!-- Text -->
+    <!--  METADATA <id>64</id>  -->
+    <text
+       xml:space="preserve"
+       x="1151.5934"
+       y="3708.1992"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text160"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">%DD-B,B</text>
+    <!-- Text -->
+    <!--  METADATA <id>65</id>  -->
+    <text
+       xml:space="preserve"
+       x="1162.3943"
+       y="3980.1992"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text162"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%ED-B,B</text>
+    <!-- Text -->
+    <!--  METADATA <id>66</id>  -->
+    <text
+       xml:space="preserve"
+       x="5532.9834"
+       y="3567.6079"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text164"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ff0000">%AB</text>
+    <!-- Text -->
+    <!--  METADATA <id>67</id>  -->
+    <text
+       xml:space="preserve"
+       x="3357.4026"
+       y="5068.1929"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text166"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ff0000">%AD</text>
+    <!-- Text -->
+    <!--  METADATA <id>68</id>  -->
+    <text
+       xml:space="preserve"
+       x="11173"
+       y="3327"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text168"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ff0000">%AC</text>
+    <!-- Text -->
+    <!--  METADATA <id>69</id>  -->
+    <text
+       xml:space="preserve"
+       x="11264"
+       y="4839"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text170"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">%DE-C,E</text>
+    <!-- Text -->
+    <!--  METADATA <id>75</id>  -->
+    <text
+       xml:space="preserve"
+       x="5534.6582"
+       y="3828.8071"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text172"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ffd600">%CB</text>
+    <!-- Text -->
+    <!--  METADATA <id>76</id>  -->
+    <text
+       xml:space="preserve"
+       x="11189"
+       y="3599"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text174"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ffd600">%CC</text>
+    <!-- Text -->
+    <!--  METADATA <id>78</id>  -->
+    <text
+       xml:space="preserve"
+       x="3341.4026"
+       y="5369.5933"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text176"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ffd600">%CD</text>
+    <!-- Text -->
+    <!--  METADATA <id>79</id>  -->
+    <text
+       xml:space="preserve"
+       x="2923"
+       y="1845"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text178"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ffd600">%CA</text>
+    <!-- Text -->
+    <!--  METADATA <id>82</id>  -->
+    <text
+       xml:space="preserve"
+       x="1698.5909"
+       y="5970.9937"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text180"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">%RD</text>
+    <!-- Text -->
+    <!--  METADATA <id>83</id>  -->
+    <text
+       xml:space="preserve"
+       x="1698.5909"
+       y="6242.9937"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text182"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%SD</text>
+    <!-- Ellipse -->
+    <!--  METADATA <id>43</id>  -->
+    <ellipse
+       transform="translate(2460,853)"
+       rx="334"
+       ry="331"
+       style="fill:#cccccc;stroke:#000000;stroke-width:7"
+       id="ellipse184"
+       cx="0"
+       cy="0" />
+    <!-- Text -->
+    <!--  METADATA <id>103</id>  -->
+    <text
+       xml:space="preserve"
+       x="5600"
+       y="1575"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text186"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ff0000">%AF</text>
+    <!-- Text -->
+    <!--  METADATA <id>104</id>  -->
+    <text
+       xml:space="preserve"
+       x="3828"
+       y="1175"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text188"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000ff">%GF</text>
+    <!-- Text -->
+    <!--  METADATA <id>105</id>  -->
+    <text
+       xml:space="preserve"
+       x="3828"
+       y="1463"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text190"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%KF</text>
+    <!-- Text -->
+    <!--  METADATA <id>106</id>  -->
+    <text
+       xml:space="preserve"
+       x="5600"
+       y="1863"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text192"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ffd600">%CF</text>
+    <!-- Text -->
+    <!--  METADATA <id>113</id>  -->
+    <text
+       xml:space="preserve"
+       x="10734"
+       y="6134"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text194"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#0000d1">%RE</text>
+    <!-- Text -->
+    <!--  METADATA <id>114</id>  -->
+    <text
+       xml:space="preserve"
+       x="10734"
+       y="6406"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text196"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#008f00">%SE</text>
+    <!-- Text -->
+    <!--  METADATA <id>118</id>  -->
+    <text
+       xml:space="preserve"
+       x="8744.3965"
+       y="5383.7925"
+       font-style="normal"
+       font-weight="bold"
+       font-size="168"
+       id="text198"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:214.4066925px;line-height:0;font-family:'Courier New';-inkscape-font-specification:'Courier New Bold';text-anchor:start;fill:#ffd600">%CE</text>
+  </g>
+</svg>

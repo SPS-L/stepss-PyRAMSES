@@ -119,6 +119,36 @@ For interactive usage, pause/continue and on-the-fly disturbance injection is su
    ram.contSim(ram.getInfTime())                 # run to end of time horizon
    ram.endSim()
 
+Helios Power-Flow Interface
+---------------------------
+
+PyRAMSES also bundles `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_, the STEPSS AC power-flow engine (successor of the Fortran PFC), exposed through the ``pyramses.helios`` module. Unlike the RAMSES classes, this interface uses PEP 8 snake_case naming. Pre-compiled libraries are bundled for Linux, Windows, and macOS.
+
+.. code-block:: python
+
+   from pyramses.helios import HeliosSession
+
+   with HeliosSession() as pf:
+       pf.load_file('network.dat')
+       pf.solve()
+
+       v, angle = pf.get_bus_voltage('1041')      # one bus
+       v_all, angle_all = pf.get_bus_voltages()   # all buses (NumPy arrays)
+
+       # modify the system and re-solve with redispatch
+       pf.trip_branch('1042-1044')
+       pf.change_load('1041', 50.0, 10.0)         # +50 MW, +10 Mvar
+       pf.apply_changes()
+
+       # N-1 contingency screening
+       for result in pf.run_contingencies(branches=True, generators=True):
+           print(result.name, result.accepted, result.violations)
+
+       # export the operating point (e.g. as RAMSES initial conditions)
+       pf.write_voltrat('volt_rat.dat')
+
+Runnable examples live in ``examples/helios/``.
+
 Main Classes
 ------------
 
@@ -134,6 +164,8 @@ Main Classes
      - Runs simulations. Supports start/pause/continue, runtime queries, and on-the-fly disturbance injection.
    * - ``pyramses.extractor``
      - Extracts and visualises time-series results from trajectory (``.trj``) files produced by a simulation.
+   * - ``pyramses.helios.HeliosSession``
+     - Runs AC power flows with the Helios engine: load, modify, solve, contingency screening, and file exports.
 
 Documentation
 -------------
