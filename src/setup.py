@@ -22,7 +22,9 @@ def read_first_existing(*paths):
                 return f.read()
     raise FileNotFoundError("None of the candidate files exist: {}".format(paths))
 
-install_requires = ['matplotlib','scipy','numpy','mkl==2025.3.1']
+# mkl is required by the bundled RAMSES binaries (Linux/Windows); there are
+# no macOS MKL wheels, and the helios engine does not need it.
+install_requires = ['matplotlib','scipy','numpy','mkl==2025.3.1; platform_system != "Darwin"']
 
 from pyramses import __version__, __author__, __email__, __status__, __url__, __package_name__ as __name__
 
@@ -42,7 +44,7 @@ setup(
     packages=find_packages(),
     install_requires=install_requires, 
     package_data={
-        'pyramses': ['libs/*.dll', 'libs/*.so', 'libs/*.h'],
+        'pyramses': ['libs/*.dll', 'libs/*.so', 'libs/*.dylib', 'libs/*.h'],
     },
     classifiers=[
         "Development Status :: " + __status__,

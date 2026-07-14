@@ -61,6 +61,16 @@ class RAMSESError(Exception):
     pass
 
 
+class HeliosError(Exception):
+    """Exception raised for errors returned by the Helios power-flow engine.
+
+    Raised when a helios C library call returns a negative status code; the
+    message includes the diagnostic text retrieved from the library's
+    per-handle error channel (``helios_get_last_error``).
+    """
+    pass
+
+
 def __which(program):
     """Locate a program on the system PATH, similar to the Unix ``which`` command.
 

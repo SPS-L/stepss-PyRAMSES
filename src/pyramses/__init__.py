@@ -9,6 +9,8 @@ Public API exported by this package:
 - :class:`~pyramses.extractor.extractor` — parse Fortran binary trajectory files post-simulation.
 - :class:`~pyramses.extractor.cur` — lightweight NamedTuple holding a (time, value, msg) timeseries.
 - :func:`~pyramses.extractor.curplot` — plot one or more :class:`cur` objects on a single axes.
+- :class:`~pyramses.helios.HeliosSession` — run AC power flows with the Helios engine.
+- :class:`~pyramses.globals.HeliosError` — exception raised by Helios calls.
 
 Module-level flags set at import time:
 
@@ -17,7 +19,7 @@ Module-level flags set at import time:
 """
 
 __package_name__ = "pyramses"
-__version__ = '0.0.70'
+__version__ = '0.1.0'
 __author__ = "Petros Aristidou"
 __copyright__ = "Petros Aristidou"
 __license__ = "Apache-2.0"
@@ -31,11 +33,14 @@ from warnings import warn
 
 from . import globals as _globals
 from .cases import cfg
-from .globals import __which
+from .globals import __which, HeliosError
 from .simulator import sim
 from .extractor import extractor, curplot, cur
+from . import helios
+from .helios import HeliosSession
 
-__all__ = ["cfg", "sim", "extractor", "cur", "curplot"]
+__all__ = ["cfg", "sim", "extractor", "cur", "curplot", "helios",
+           "HeliosSession", "HeliosError"]
 
 # Detect gnuplot at import time; propagate result to globals so that cases.py
 # (which reads __runTimeObs__ from globals at import time) also gets the correct value.
