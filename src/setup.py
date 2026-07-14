@@ -12,6 +12,7 @@ try:
 except ImportError:
     from distutils.core import setup, find_packages
 import os
+import re
 
 def read_first_existing(*paths):
     base = os.path.dirname(__file__)
@@ -22,11 +23,32 @@ def read_first_existing(*paths):
                 return f.read()
     raise FileNotFoundError("None of the candidate files exist: {}".format(paths))
 
+# Metadata is parsed (not imported) from the package so that setup.py works
+# in pip's isolated build environment, where the package's runtime
+# dependencies (numpy, scipy, ...) are not installed.
+def read_metadata():
+    init_path = os.path.join(os.path.dirname(__file__), 'pyramses', '__init__.py')
+    with open(init_path, encoding='utf-8') as f:
+        content = f.read()
+    def grab(name):
+        match = re.search(r"^__%s__\s*=\s*['\"]([^'\"]+)['\"]" % name, content, re.M)
+        if not match:
+            raise RuntimeError("__%s__ not found in %s" % (name, init_path))
+        return match.group(1)
+    return {name: grab(name) for name in
+            ('version', 'author', 'email', 'status', 'url', 'package_name')}
+
 # mkl is required by the bundled RAMSES binaries (Linux/Windows); there are
 # no macOS MKL wheels, and the helios engine does not need it.
 install_requires = ['matplotlib','scipy','numpy','mkl==2025.3.1; platform_system != "Darwin"']
 
-from pyramses import __version__, __author__, __email__, __status__, __url__, __package_name__ as __name__
+_meta = read_metadata()
+__version__ = _meta['version']
+__author__ = _meta['author']
+__email__ = _meta['email']
+__status__ = _meta['status']
+__url__ = _meta['url']
+__name__ = _meta['package_name']
 
 setup(
     name=__name__,
