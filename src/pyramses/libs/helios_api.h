@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: LGPL-3.0-or-later
+/* SPDX-License-Identifier: LicenseRef-STEPSS-Academic-Public-License
  * Copyright (c) 2026 Sustainable Power Systems Laboratory (https://sps-lab.org/)
  * Part of STEPSS-Helios: Modern C++ Power Flow Calculator
  */
