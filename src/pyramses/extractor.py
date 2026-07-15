@@ -392,12 +392,16 @@ class extractor(object):
         >>> ext = pyramses.extractor(case.getTrj())
         >>> ext.getBranch('1041-4041').PF.plot() # will plot the timeseries simulated for the active power of line'1041-4041' 
         
-        .. note:: Available data are
-           obsnames = ['PF','QF','PT','QT','RM','RA']
-           obsdesc = ['P (MW) entering at FROM end', 'Q (Mvar) entering at FROM end',
-                    'P (MW) entering at TO end', 'Q (Mvar) entering at TO end',
-                    'magnitude of transformer ratio','phase angle of transformer ratio (deg)']
-        
+        .. note::
+
+           Available observables:
+
+           - ``PF`` — P (MW) entering at FROM end
+           - ``QF`` — Q (Mvar) entering at FROM end
+           - ``PT`` — P (MW) entering at TO end
+           - ``QT`` — Q (Mvar) entering at TO end
+           - ``RM`` — magnitude of transformer ratio
+           - ``RA`` — phase angle of transformer ratio (deg)
         """
         try:
             i=self._braname.index(braname) + 1 # +1 is to go to Fortran notation
@@ -444,23 +448,23 @@ class extractor(object):
         >>> ext = pyramses.extractor(case.getTrj())
         >>> ext.getSync('g1').P.plot() # will plot the timeseries simulated for the active power of 'g1' 
         
-        .. note:: 
+        .. note::
 
-           Available data are
-           * obsnames = ['P','Q','A','S','FW','DD','QD','QW','FC','FV','T','ET','SC']
-           * obsdesc = ['active power produced (MW)',
-                    'reactive power produced (Mvar)',
-                    'rotor angle wrt COI (deg)',
-                    'rotor speed (pu)',
-                    'flux in field winding (pu mach. base)     ',
-                    'flux in d1 damper (pu mach. base)         ',
-                    'flux in q1 damper (pu mach. base)         ',
-                    'flux in q2 winding (pu mach. base)        ',
-                    'field current (pu)                        ',
-                    'field voltage (pu)                        ',
-                    'mechanical torque (pu)                    ',
-                    'electromagnetic torque (pu mach. base)    ',
-                    'speed of COI reference (pu)               ']
+           Available observables:
+
+           - ``P`` — active power produced (MW)
+           - ``Q`` — reactive power produced (Mvar)
+           - ``A`` — rotor angle wrt COI (deg)
+           - ``S`` — rotor speed (pu)
+           - ``FW`` — flux in field winding (pu mach. base)
+           - ``DD`` — flux in d1 damper (pu mach. base)
+           - ``QD`` — flux in q1 damper (pu mach. base)
+           - ``QW`` — flux in q2 winding (pu mach. base)
+           - ``FC`` — field current (pu)
+           - ``FV`` — field voltage (pu)
+           - ``T`` — mechanical torque (pu)
+           - ``ET`` — electromagnetic torque (pu mach. base)
+           - ``SC`` — speed of COI reference (pu)
         """
         try:
             i=self._syncname.index(syncname) + 1 # +1 is to go to Fortran notation

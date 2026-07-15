@@ -22,7 +22,7 @@ STEPSS has been developed by `Dr. Petros Aristidou <https://sps-lab.org/>`_ (Cyp
 Overview
 --------
 
-PyRAMSES enables scripted power system dynamic simulations from Python or Jupyter notebooks. It exposes the full capability of the RAMSES solver through a clean Python API, with pre-compiled binaries bundled for Windows and Linux — no separate solver installation required.
+PyRAMSES enables scripted power system dynamic simulations from Python or Jupyter notebooks. It exposes the full capability of the RAMSES solver through a clean Python API, with pre-compiled binaries bundled — no separate solver installation required. The package also bundles the `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_ AC power-flow engine (see `Helios Power-Flow Interface`_ below).
 
 RAMSES (RApid Multithreaded Simulation of Electric power Systems) simulates the dynamic evolution of power systems under the phasor approximation, using Backward Euler, Trapezoidal, or BDF2 integration with OpenMP parallelism.
 
@@ -34,7 +34,8 @@ Key Features
 - **Trajectory post-processing** — extract and plot time-series results from Fortran binary trajectory files
 - **Parameter sweeps** — script multiple simulations with varying parameters or disturbances
 - **Eigenanalysis support** — export system Jacobian matrices for small-signal stability analysis
-- **Bundled binaries** — pre-compiled RAMSES shared libraries (``ramses.dll`` / ``ramses.so``) for Windows and Linux
+- **Bundled binaries** — pre-compiled RAMSES shared libraries (``ramses.dll`` / ``ramses.so``) for Windows and Linux, plus Helios power-flow libraries for Windows, Linux, and macOS
+- **AC power flow** — the ``pyramses.helios`` module runs Helios power flows: solve, modify with redispatch, N-1 contingency screening, and file exports
 - **Scientific Python integration** — works natively with NumPy, SciPy, Matplotlib, and Jupyter
 
 Installation
@@ -42,7 +43,9 @@ Installation
 
 Install PyRAMSES and all recommended dependencies via pip::
 
-   pip install matplotlib scipy numpy mkl jupyter ipython pyramses
+   pip install jupyter ipython pyramses
+
+Required dependencies (matplotlib, scipy, numpy, and — on Windows/Linux — mkl) are installed automatically.
 
 Minimal installation (no plotting or notebook support)::
 
@@ -73,14 +76,17 @@ Platform Support
    :header-rows: 1
 
    * - Platform
-     - Binary
+     - Binaries
      - Notes
    * - Windows
-     - ``ramses.dll``
+     - ``ramses.dll``, ``helios_api.dll``
      - Primary platform, full support
    * - Linux
-     - ``ramses.so``
+     - ``ramses.so``, ``libhelios_api.so``
      - Full support
+   * - macOS
+     - ``libhelios_api.dylib``
+     - Helios power flow only (universal binary); RAMSES dynamic simulation is not available on macOS
 
 The free version is limited to 1000 buses and 2 OpenMP cores. See the `License <https://stepss.sps-lab.org/getting-started/license/>`_ page for full terms.
 
