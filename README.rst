@@ -190,6 +190,8 @@ PyRAMSES (the Python wrapper) is distributed under the `Apache License 2.0 <LICE
 
 The RAMSES solver (the dynamic library bundled in this package) is proprietary software owned by the University of Liège and is free for non-commercial use (teaching, academic research, personal purposes), with a limit of 1000 buses and 2 CPU cores. For commercial use or larger models, contact the authors. See the `STEPSS License page <https://stepss.sps-lab.org/getting-started/license/>`_ for full terms.
 
+The STEPSS-Helios power-flow library (``libhelios_api``, also bundled in this package and used by ``pyramses.helios``) is proprietary software of the Sustainable Power Systems Laboratory (Cyprus University of Technology), distributed under the STEPSS-Helios Academic Public License: free for non-commercial use; commercial use requires a license (info@sps-lab.org). See the `NOTICE <NOTICE>`_ file for details.
+
 Authors
 -------
 

@@ -9,8 +9,8 @@ Version 2.0. See the LICENSE file for details.
 IMPORTANT — Proprietary Components
 ====================================
 
-The STEPSS suite includes compiled executables of the following components that
-are NOT covered by the Apache License 2.0:
+This package bundles compiled binaries of the following components that are
+NOT covered by the Apache License 2.0:
 
 RAMSES (Dynamic Simulator)
 --------------------------
@@ -33,6 +33,26 @@ license:
     up to 1000 buses and execution using no more than 2 cores.
 
   - RAMSES is provided "as is", without warranty of any kind.
+
+STEPSS-Helios (Power Flow Engine)
+---------------------------------
+
+This package bundles the compiled STEPSS-Helios C API shared library
+(libhelios_api.so / helios_api.dll / libhelios_api.dylib under
+src/pyramses/libs/), used by the pyramses.helios module. STEPSS-Helios is the
+property of the Sustainable Power Systems Laboratory, Cyprus University of
+Technology, and is distributed under the STEPSS-Helios Academic Public
+License:
+
+  - Permission is granted to use it free of charge for any non-commercial
+    purpose (teaching and academic research, research at non-profit
+    institutions, personal non-profit purposes).
+
+  - Commercial use requires a commercial license; contact info@sps-lab.org.
+
+  - It is provided "as is", without warranty of any kind.
+
+See https://github.com/SPS-L/stepss-helios for the full license text.
 
 PFC (Power Flow Computation) and CODEGEN (Model Generator)
 -----------------------------------------------------------
