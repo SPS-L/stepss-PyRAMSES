@@ -15,12 +15,9 @@
 PyRAMSES: Python Interface to RAMSES
 =====================================
 
-PyRAMSES is a Python interface to the `RAMSES <https://stepss.sps-lab.org/getting-started/overview/>`_ dynamic simulator — part of the `STEPSS <https://stepss.sps-lab.org/>`_ power system simulation suite. It covers the full simulation workflow: defining test cases, launching simulations, querying system state at runtime, and extracting and plotting results.
+Scripted power system dynamic simulation and AC power-flow analysis from Python.
 
-STEPSS has been developed by `Dr. Petros Aristidou <https://sps-lab.org/>`_ (Cyprus University of Technology) and Dr. Thierry Van Cutsem (Emeritus, University of Liège).
-
-Overview
---------
+PyRAMSES is a Python interface to the `RAMSES <https://stepss.sps-lab.org/getting-started/overview/>`_ dynamic simulator — part of the `STEPSS <https://stepss.sps-lab.org/>`_ power system simulation platform. It covers the full simulation workflow: defining test cases, launching simulations, querying system state at runtime, and extracting and plotting results.
 
 PyRAMSES enables scripted power system dynamic simulations from Python or Jupyter notebooks. It exposes the full capability of the RAMSES solver through a clean Python API, with pre-compiled binaries bundled — no separate solver installation required. The package also bundles the `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_ AC power-flow engine (see `Helios Power-Flow Interface`_ below).
 
@@ -180,28 +177,28 @@ Full documentation is available at `https://stepss.sps-lab.org/pyramses/ <https:
 
 - `Overview <https://stepss.sps-lab.org/pyramses/overview/>`_
 - `Installation <https://stepss.sps-lab.org/pyramses/installation/>`_
+- `Power Flow with Helios <https://stepss.sps-lab.org/pyramses/helios/>`_
 - `API Reference <https://stepss.sps-lab.org/pyramses/api-reference/>`_
 - `Examples <https://stepss.sps-lab.org/pyramses/examples/>`_
+
+Support:
+
+- Issues: `https://github.com/SPS-L/stepss-pyramses/issues <https://github.com/SPS-L/stepss-pyramses/issues>`_
+- Project page: `https://sps-lab.org/project/pyramses/ <https://sps-lab.org/project/pyramses/>`_
 
 License
 -------
 
-PyRAMSES (the Python wrapper) is distributed under the `Apache License 2.0 <LICENSE.rst>`_.
+PyRAMSES (the Python wrapper) is distributed under the **Apache License 2.0** — see ``LICENSE.rst``. Copyright © Petros Aristidou.
 
 The RAMSES solver (the dynamic library bundled in this package) is proprietary software owned by the University of Liège and is free for non-commercial use (teaching, academic research, personal purposes), with a limit of 1000 buses and 2 CPU cores. For commercial use or larger models, contact the authors. See the `STEPSS License page <https://stepss.sps-lab.org/getting-started/license/>`_ for full terms.
 
-The STEPSS-Helios power-flow library (``libhelios_api``, also bundled in this package and used by ``pyramses.helios``) is proprietary software of the Sustainable Power Systems Laboratory (Cyprus University of Technology), distributed under the STEPSS-Helios Academic Public License: free for non-commercial use; commercial use requires a license (info@sps-lab.org). See the `NOTICE <NOTICE>`_ file for details.
+The STEPSS-Helios power-flow library (``libhelios_api``, also bundled in this package and used by ``pyramses.helios``) is the property of Dr. Petros Aristidou, distributed under the STEPSS-Helios Academic Public License: free for non-commercial use; commercial use requires a license (info@sps-lab.org). See the ``NOTICE`` file for details.
 
 Authors
 -------
 
+Developed and maintained by the `Sustainable Power Systems Laboratory (SPS-L) <https://sps-lab.org/>`_ at the Cyprus University of Technology, under the direction of Dr. Petros Aristidou.
+
 - `Dr. Petros Aristidou <https://sps-lab.org/>`_ — Cyprus University of Technology
 - Dr. Thierry Van Cutsem — Emeritus, University of Liège
-
-Support
--------
-
-- Documentation: `https://stepss.sps-lab.org/pyramses/ <https://stepss.sps-lab.org/pyramses/overview/>`_
-- Issues: `https://github.com/SPS-L/stepss-pyramses/issues <https://github.com/SPS-L/stepss-pyramses/issues>`_
-- Project page: `https://sps-lab.org/project/pyramses/ <https://sps-lab.org/project/pyramses/>`_
-
