@@ -16,8 +16,8 @@ cd src && python setup.py sdist bdist_wheel
 
 A pytest suite covers the helios power-flow module (`tests/`, run with `pytest tests/` after `pip install ./src pytest`; CI runs it on Linux/Windows/macOS via `.github/workflows/tests.yml`). The RAMSES side has **no test suite or linter configured** — validate RAMSES changes against one of the example repositories:
 
-- Nordic test system: `git@github.com:SPS-L/IEEE-Nordic-Test-system.git`
-- 5-bus test system: `git@github.com:SPS-L/5_bus_test_system.git`
+- Nordic test system: `git@github.com:SPS-L/stepss-IEEE-Nordic-Test-system.git`
+- 5-bus test system: `git@github.com:SPS-L/stepss-5-bus-test-system.git`
 
 The `ramses` console entry point (defined in `src/setup.py`) runs simulations from a command file:
 
