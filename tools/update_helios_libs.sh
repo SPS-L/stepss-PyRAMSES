@@ -32,14 +32,17 @@ if [ -f helios-api-windows-x64.zip ]; then
     unzip -q helios-api-windows-x64.zip -d helios-api-windows-x64
 fi
 
-install -m 644 helios-api-linux-x86_64/libhelios_api.so      "$LIBS_DIR/"
-install -m 644 helios-api-macos-universal/libhelios_api.dylib "$LIBS_DIR/"
-install -m 644 helios-api-windows-x64/helios_api.dll          "$LIBS_DIR/"
+# Shared libraries go into per-platform subfolders (the Linux and macOS
+# RAMSES builds share the filename ramses.so); the header is platform-
+# independent and stays at the libs/ root.
+install -m 644 helios-api-linux-x86_64/libhelios_api.so      "$LIBS_DIR/lin/"
+install -m 644 helios-api-macos-universal/libhelios_api.dylib "$LIBS_DIR/mac/"
+install -m 644 helios-api-windows-x64/helios_api.dll          "$LIBS_DIR/win/"
 install -m 644 helios-api-linux-x86_64/helios_api.h           "$LIBS_DIR/"
 
 echo
 echo "Updated $LIBS_DIR:"
-ls -l "$LIBS_DIR" | grep -i helios
+ls -l "$LIBS_DIR" "$LIBS_DIR"/lin "$LIBS_DIR"/mac "$LIBS_DIR"/win | grep -i helios
 echo
 echo "Done. Review the changes and commit, e.g.:"
 echo "  git add src/pyramses/libs && git commit -m \"Bundle helios $TAG C API libraries\""

@@ -3,9 +3,10 @@
 """Python interface to the RAMSES dynamic power-system simulator.
 
 Provides :class:`sim`, a ctypes-based wrapper around the RAMSES shared library
-(``ramses.dll`` on Windows, ``ramses.so`` on Linux).  Function signatures are
-read automatically from the bundled ``ramses.h`` C header at instantiation
-time, so the wrapper is self-describing and does not hard-code argument types.
+(``ramses.dll`` on Windows, ``ramses.so`` on Linux and macOS).  Function
+signatures are read automatically from the bundled ``ramses.h`` C header at
+instantiation time, so the wrapper is self-describing and does not hard-code
+argument types.
 """
 
 import ctypes
@@ -18,7 +19,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 from .cases import cfg
-from .globals import RAMSESError, CustomWarning, __libdir__, wrapToList
+from .globals import RAMSESError, CustomWarning, __libdir__, __platlibdir__, wrapToList
 
 class sim(object):
     """Interface to a RAMSES solver instance.
@@ -46,11 +47,13 @@ class sim(object):
     def __init__(self, custLibDir = None):
         """Load the RAMSES shared library and initialise C function signatures.
 
-        On Windows the library is ``ramses.dll``; on all other platforms it is
-        ``ramses.so``.  By default the library bundled with the package
-        (``src/pyramses/libs/``) is used.  A custom directory can be supplied
-        via *custLibDir* to override that library — useful for testing
-        pre-release solver builds.
+        On Windows the library is ``ramses.dll``; on all other platforms
+        (Linux and macOS) it is ``ramses.so``.  By default the library bundled
+        with the package for the current platform is used
+        (``src/pyramses/libs/win/``, ``libs/lin/`` or ``libs/mac/``).  A custom
+        directory can be supplied via *custLibDir* to override that library —
+        useful for testing pre-release solver builds; the directory must
+        contain the library file directly (no platform subfolder).
 
         After loading the library, :meth:`_setcalls` is invoked to parse
         ``ramses.h`` and configure the ctypes argument/return types for every
@@ -68,7 +71,7 @@ class sim(object):
                              system runtime libraries such as OpenBLAS on Linux).
         """
         if custLibDir is None:
-            ramLibDir = __libdir__
+            ramLibDir = __platlibdir__
         else:
             try:
                 if os.path.exists(custLibDir) and os.path.isdir(custLibDir):

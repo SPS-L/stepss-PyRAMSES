@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 
 import numpy
 
-from .globals import HeliosError, __libdir__
+from .globals import HeliosError, __platlibdir__
 
 _c_int_p = ctypes.POINTER(ctypes.c_int)
 _c_double_p = ctypes.POINTER(ctypes.c_double)
@@ -245,8 +245,13 @@ _lib_cache = {}
 
 
 def _load_library(lib_dir=None):
-    """Load (or return the cached) helios shared library and bind signatures."""
-    directory = os.path.realpath(lib_dir) if lib_dir else __libdir__
+    """Load (or return the cached) helios shared library and bind signatures.
+
+    Without *lib_dir* the platform-specific bundled copy is used
+    (``libs/win``, ``libs/lin`` or ``libs/mac``); a custom *lib_dir* must
+    contain the library file directly (no platform subfolder).
+    """
+    directory = os.path.realpath(lib_dir) if lib_dir else __platlibdir__
     path = os.path.join(directory, _lib_name())
     if path in _lib_cache:
         return _lib_cache[path]

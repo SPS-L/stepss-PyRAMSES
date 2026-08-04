@@ -67,7 +67,13 @@ setup(
     packages=find_packages(),
     install_requires=install_requires, 
     package_data={
-        'pyramses': ['libs/*.dll', 'libs/*.so', 'libs/*.dylib', 'libs/*.h'],
+        # Headers are platform-independent and live at the libs/ root; the
+        # shared libraries are split per platform because the Linux and macOS
+        # RAMSES builds share the filename ramses.so.
+        'pyramses': ['libs/*.h',
+                     'libs/win/*.dll',
+                     'libs/lin/*.so',
+                     'libs/mac/*.so', 'libs/mac/*.dylib'],
     },
     classifiers=[
         "Development Status :: " + __status__,

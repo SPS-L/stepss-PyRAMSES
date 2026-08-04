@@ -4,7 +4,10 @@
 
 Provides:
 - Module-level configuration flags (``__runTimeObs__``) and the resolved
-  path to the bundled native libraries (``__libdir__``).
+  paths to the bundled native libraries: ``__libdir__`` (the ``libs/`` root,
+  holding the platform-independent C headers) and ``__platlibdir__`` (the
+  platform subdirectory ``libs/win``, ``libs/lin`` or ``libs/mac`` holding
+  the shared libraries for the current platform).
 - ``RAMSESError`` — custom exception for RAMSES solver failures.
 - Helper functions used by :mod:`pyramses.cases` and :mod:`pyramses.simulator`.
 """
@@ -12,10 +15,31 @@ Provides:
 import errno
 import inspect
 import os
+import sys
 
 __runTimeObs__ = True
 __libdir__ = os.path.realpath(
     os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], "libs")))
+
+
+def _platform_subdir():
+    """Return the ``libs/`` subdirectory name for the current platform.
+
+    The macOS and Linux RAMSES builds share the filename ``ramses.so``, so
+    the bundled libraries are kept in per-platform subdirectories:
+    ``win`` (Windows), ``mac`` (macOS), ``lin`` (Linux and everything else).
+
+    :returns: platform folder name, one of ``'win'``, ``'mac'``, ``'lin'``
+    :rtype: str
+    """
+    if sys.platform in ('win32', 'cygwin'):
+        return 'win'
+    if sys.platform == 'darwin':
+        return 'mac'
+    return 'lin'
+
+
+__platlibdir__ = os.path.join(__libdir__, _platform_subdir())
 
 
 def CustomWarning(message, category, filename, lineno, file=None, line=None):

@@ -2,7 +2,7 @@
 
 ## What This Project Is
 
-PyRAMSES is a Python wrapper around the proprietary RAMSES C/Fortran solver for power system dynamics simulation. The Python code (~2000 lines) acts as a thin ctypes bridge to compiled `ramses.dll` (Windows) or `ramses.so` (Linux) binaries located in `src/pyramses/libs/`. The solver itself is a black box; this repo provides the API layer only.
+PyRAMSES is a Python wrapper around the proprietary RAMSES C/Fortran solver for power system dynamics simulation. The Python code (~2000 lines) acts as a thin ctypes bridge to compiled `ramses.dll` (Windows) or `ramses.so` (Linux/macOS) binaries located in per-platform folders under `src/pyramses/libs/` (`win/`, `lin/`, `mac/`; the C headers stay at the `libs/` root). The solver itself is a black box; this repo provides the API layer only.
 
 ## Build & Install
 
