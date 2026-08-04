@@ -19,7 +19,7 @@ Module-level flags set at import time:
 """
 
 __package_name__ = "pyramses"
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __author__ = "Petros Aristidou"
 __copyright__ = "Petros Aristidou"
 __license__ = "Apache-2.0"

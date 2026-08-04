@@ -38,9 +38,10 @@ def read_metadata():
     return {name: grab(name) for name in
             ('version', 'author', 'email', 'status', 'url', 'package_name')}
 
-# mkl is required by the bundled RAMSES binaries (Linux/Windows); there are
-# no macOS MKL wheels, and the helios engine does not need it.
-install_requires = ['matplotlib','scipy','numpy','mkl==2025.3.1; platform_system != "Darwin"']
+# Since RAMSES v3.50 the bundled binaries are gfortran builds: they link only
+# system libraries (OpenBLAS/gfortran/OpenMP runtimes on Linux, none on
+# Windows), so no MKL dependency is needed.
+install_requires = ['matplotlib','scipy','numpy']
 
 _meta = read_metadata()
 __version__ = _meta['version']

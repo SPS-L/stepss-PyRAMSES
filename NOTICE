@@ -6,7 +6,7 @@ Systems Simulation) suite developed by the Sustainable Power Systems Lab (SPS-L)
 The source code in this repository is licensed under the Apache License,
 Version 2.0. See the LICENSE file for details.
 
-IMPORTANT — Proprietary Components
+IMPORTANT - Proprietary Components
 ====================================
 
 This package bundles compiled binaries of the following components that are
@@ -16,8 +16,9 @@ RAMSES (Dynamic Simulator)
 --------------------------
 
 RAMSES, the solver of differential-algebraic equations, is the property of the
-University of Liège, Belgium, and is distributed under a separate proprietary
-license:
+University of Liège, Belgium, and is distributed under the Academic Public
+License for the use of STEPSS (see https://github.com/SPS-L/stepss-ramses
+for the full license text):
 
   - Permission is granted to use RAMSES free of charge for any non-commercial
     purpose, including teaching and research at universities, colleges, and
@@ -56,10 +57,10 @@ See https://github.com/SPS-L/stepss-helios for the full license text.
 PFC (Power Flow Computation) and CODEGEN (Model Generator)
 -----------------------------------------------------------
 
-PFC and CODEGEN are the property of Dr. Thierry Van Cutsem. They are
-distributed as compiled executables that are free to use but are not
-open-source. Their source code is not included in any of the STEPSS
-repositories.
+PFC and CODEGEN, the other modules covered by the Academic Public License
+for the use of STEPSS, are the property of Dr. Thierry Van Cutsem. They are
+NOT included in this package; they are distributed separately as compiled
+executables that are free to use but are not open-source.
 
 Authors:
   - Dr. Petros Aristidou (petros.aristidou@cut.ac.cy)

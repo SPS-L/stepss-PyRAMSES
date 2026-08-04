@@ -65,7 +65,7 @@ class sim(object):
         :raises RAMSESError: if *custLibDir* is given but does not exist or is
                              not a directory.
         :raises ImportError: if the shared library cannot be loaded (e.g. missing
-                             runtime dependencies such as Intel MKL).
+                             system runtime libraries such as OpenBLAS on Linux).
         """
         if custLibDir is None:
             ramLibDir = __libdir__
