@@ -455,7 +455,7 @@ class extractor(object):
            - ``P`` — active power produced (MW)
            - ``Q`` — reactive power produced (Mvar)
            - ``A`` — rotor angle wrt COI (deg)
-           - ``S`` — rotor speed (pu)
+           - ``S`` — rotor speed (pu; 1 = nominal)
            - ``FW`` — flux in field winding (pu mach. base)
            - ``DD`` — flux in d1 damper (pu mach. base)
            - ``QD`` — flux in q1 damper (pu mach. base)
@@ -464,7 +464,14 @@ class extractor(object):
            - ``FV`` — field voltage (pu)
            - ``T`` — mechanical torque (pu)
            - ``ET`` — electromagnetic torque (pu mach. base)
-           - ``SC`` — speed of COI reference (pu)
+           - ``SC`` — speed *deviation* of the COI reference (pu; 0 = nominal)
+
+        .. note::
+
+           The two speed observables use different conventions: ``S`` is the
+           whole rotor speed (1 = nominal) while ``SC`` is the deviation of the
+           centre-of-inertia speed from nominal (0 = nominal). The system
+           frequency in Hz is therefore ``fnom * (1 + SC)`` or ``fnom * S``.
         """
         try:
             i=self._syncname.index(syncname) + 1 # +1 is to go to Fortran notation
@@ -479,11 +486,12 @@ class extractor(object):
 
         Available attributes (all as :class:`cur` objects):
         ``P`` (MW), ``Q`` (Mvar), ``A`` (rotor angle wrt COI, deg),
-        ``S`` (rotor speed, pu), ``FW`` (field-winding flux, pu),
+        ``S`` (rotor speed, pu; 1 = nominal), ``FW`` (field-winding flux, pu),
         ``DD`` (d1 damper flux, pu), ``QD`` (q1 damper flux, pu),
         ``QW`` (q2 winding flux, pu), ``FC`` (field current, pu),
         ``FV`` (field voltage, pu), ``T`` (mechanical torque, pu),
-        ``ET`` (electromagnetic torque, pu), ``SC`` (COI speed, pu).
+        ``ET`` (electromagnetic torque, pu),
+        ``SC`` (COI speed deviation, pu; 0 = nominal).
         """
         def _getElem(self, j, msg):
             tmp = self._shift + j
@@ -507,7 +515,7 @@ class extractor(object):
                     'field voltage (pu)                        ',
                     'mechanical torque (pu)                    ',
                     'electromagnetic torque (pu mach. base)    ',
-                    'speed of COI reference (pu)               ']
+                    'speed deviation of COI reference (pu)     ']
             self.obsdict = dict(zip(self._obsnames, self._obsdesc))
             for name,msg in zip(self._obsnames, self._obsdesc):
                 j=j+1
