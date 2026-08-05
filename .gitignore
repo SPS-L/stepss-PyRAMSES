@@ -92,3 +92,7 @@ ENV/
 # Rope project settings
 .ropeproject
 /.idea/
+
+# Local Claude Code / MCP configuration
+/.claude/
+.mcp.json
