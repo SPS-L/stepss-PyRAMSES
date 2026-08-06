@@ -527,16 +527,20 @@ read_assign() {  # read_assign <file> <name>
 CUR="$(read_assign "$INIT" __version__)"
 [ -n "$CUR" ] || { echo "FAIL: __version__ not found in $INIT" >&2; exit 1; }
 
-# Split on dots and bump the last component numerically. Guard against a
-# non-numeric patch so a malformed version fails loudly instead of producing
-# a nonsense tag that then gets published.
+# Require exactly three dot-separated numeric components. Anchored full-string
+# match: a two-component version like '0.3' would otherwise fall through to
+# REST="${CUR#*.}" returning REST unchanged (no dot left to strip), silently
+# aliasing PATCH to MINOR and producing 0.3.4 instead of failing.
+if ! [[ "$CUR" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "FAIL: __version__ '$CUR' is not major.minor.patch with numeric parts" >&2
+    exit 1
+fi
+
+# Split on dots and bump the last component numerically.
 MAJOR="${CUR%%.*}"
 REST="${CUR#*.}"
 MINOR="${REST%%.*}"
 PATCH="${REST#*.}"
-case "$MAJOR$MINOR$PATCH" in
-    *[!0-9]*) echo "FAIL: __version__ '$CUR' is not major.minor.patch with numeric parts" >&2; exit 1 ;;
-esac
 NEW="$MAJOR.$MINOR.$((PATCH + 1))"
 
 RAMSES_VER="$(read_assign "$BUNDLED" RAMSES_VERSION)"
@@ -561,6 +565,12 @@ if n != 1:
     sys.exit("FAIL: expected exactly one __version__ assignment, found %d" % n)
 open(path, 'w', encoding='utf-8').write(out)
 PYEOF
+REWRITE_RC=$?
+# Must abort here, before _bundled.py is touched: a failed rewrite must leave
+# no partial mutation, or CI would tag and publish a version that was never
+# actually written to the package. There is no `set -e` in this script, so the
+# heredoc's exit status has to be checked explicitly.
+[ "$REWRITE_RC" -eq 0 ] || exit 1
 
 cat > "$BUNDLED" <<EOF
 """Upstream component versions bundled in this pyramses release.
