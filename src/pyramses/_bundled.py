@@ -7,5 +7,5 @@ is silently overwritten by the next sync.
 Only the upstream that triggered a sync changes; the other is carried forward.
 """
 
-RAMSES_VERSION = "v3.51"
+RAMSES_VERSION = "v3.55"
 HELIOS_VERSION = "v1.2.0"
