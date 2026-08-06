@@ -62,6 +62,12 @@ two uploads race for the same version. It is narrowed to `workflow_dispatch`
 only and kept as a break-glass path for the case where PyPI upload fails but
 everything upstream of it succeeded.
 
+That break-glass path takes the release tag as a `workflow_dispatch` input,
+`gh release download`s the `.whl` and `.tar.gz` attached to that release, and
+uploads those exact files. It does not build: rebuilding from `master` would
+upload bytes no gate ever saw, under a version whose GitHub release already
+carries the tested artifact.
+
 ## Architecture
 
 ```
@@ -137,7 +143,7 @@ Requires the same `PYRAMSES_DISPATCH_TOKEN` secret in this repository.
 | File | Status | Purpose |
 |---|---|---|
 | `.github/workflows/sync-upstream-release.yml` | new | the pipeline above |
-| `.github/workflows/python-publish.yml` | narrowed | drop the `release:` trigger; keep `workflow_dispatch` |
+| `.github/workflows/python-publish.yml` | rewritten | break-glass: drop the `release:` trigger, take a release tag, upload that release's attached distributions without rebuilding |
 | `.github/workflows/tests.yml` | extended | Nordic runs on ordinary pushes and PRs too |
 | `tools/update_ramses_libs.sh` | new | RAMSES mirror of `update_helios_libs.sh` |
 | `tools/bump_version.sh` | new | patch bump and `_bundled.py` write |
@@ -228,7 +234,8 @@ that version number is spent and the fix is a further patch bump.
 
 Ordering exists to make that case rare. PyPI runs last, so the common failure
 leaves the version unspent. If PyPI alone fails, the tested wheel is still
-attached to the GitHub release and `python-publish.yml` can upload it by hand.
+attached to the GitHub release and `python-publish.yml`, given that release's
+tag, uploads that exact file by hand.
 
 ## Testing
 
