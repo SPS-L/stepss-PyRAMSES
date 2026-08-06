@@ -291,3 +291,174 @@ jobs:
       - name: Full test suite against the installed wheel
         shell: bash
         run: pytest tests/ -v
+
+  release:
+    needs: [fetch, build-wheel, nordic]
+    # Belt and braces: a workflow_dispatch rehearsal must never reach this
+    # job. Either condition alone would do; both are cheap.
+    if: github.event_name == 'repository_dispatch' && needs.fetch.outputs.rehearsal == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      master_moved: ${{ steps.ff.outputs.moved }}
+      release_published: ${{ steps.publish.outputs.published }}
+      # Set by a step of our own, not by the third-party publish action,
+      # which exposes no outputs.
+      pypi_published: ${{ steps.pypi_done.outputs.published }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.fetch.outputs.head_sha }}
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Fast-forward master
+        id: ff
+        env:
+          HEAD_SHA: ${{ needs.fetch.outputs.head_sha }}
+          BASE_SHA: ${{ needs.fetch.outputs.base_sha }}
+        run: |
+          git fetch origin master
+          CURRENT="$(git rev-parse origin/master)"
+          if [ "$CURRENT" != "$BASE_SHA" ]; then
+            echo "FAIL: master moved from $BASE_SHA to $CURRENT while the wheel was being gated."
+            echo "Rebasing would publish a tree that was never gated. Use 'Re-run all jobs'"
+            echo "(not 'Re-run failed jobs') to retry from the current state, and delete the"
+            echo "leftover sync branch first or the re-run's own push will be a non-fast-forward."
+            exit 1
+          fi
+          # Rejected by the server if it is not a fast-forward.
+          git push origin "$HEAD_SHA:refs/heads/master"
+          echo "OK: master is now $HEAD_SHA"
+          echo "moved=true" >> "$GITHUB_OUTPUT"
+
+      - name: Cut the GitHub release
+        id: publish
+        env:
+          TAG: ${{ needs.fetch.outputs.pyramses_tag }}
+          HEAD_SHA: ${{ needs.fetch.outputs.head_sha }}
+          SOURCE: ${{ needs.fetch.outputs.source }}
+          UPSTREAM_TAG: ${{ needs.fetch.outputs.upstream_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RAMSES_VER="$(sed -n 's/^RAMSES_VERSION = "\(.*\)"/\1/p' src/pyramses/_bundled.py)"
+          HELIOS_VER="$(sed -n 's/^HELIOS_VERSION = "\(.*\)"/\1/p' src/pyramses/_bundled.py)"
+          cat > notes.md <<EOF
+          Automated release: **$SOURCE $UPSTREAM_TAG** was published upstream and the
+          bundled libraries were refreshed to match.
+
+          | Component | Version |
+          | --- | --- |
+          | RAMSES | $RAMSES_VER |
+          | Helios C API | $HELIOS_VER |
+
+          The wheel attached here is the exact artifact the regression gate ran
+          against on Linux, Windows and macOS: the full test suite, including the
+          Nordic voltage-collapse trajectory check, passed on all three before this
+          release was cut. The same file was uploaded to PyPI.
+          EOF
+          # --target creates the tag as part of publishing, collapsing what
+          # would otherwise be two points of no return into one.
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$HEAD_SHA" \
+            --title "PyRAMSES $TAG" \
+            --notes-file notes.md \
+            dist/*
+          echo "published=true" >> "$GITHUB_OUTPUT"
+
+      # Last, deliberately. A PyPI version can never be reclaimed, so it runs
+      # only once master has moved and the release exists. If this step alone
+      # fails, the tested wheel is attached to the release above and
+      # python-publish.yml can upload it by hand.
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: dist/
+
+      # Only reached if the upload above succeeded, so this is a faithful
+      # record of whether the version was spent. report-failure keys the
+      # difference between "retryable" and "gone" off it.
+      - name: Mark PyPI published
+        id: pypi_done
+        run: echo "published=true" >> "$GITHUB_OUTPUT"
+
+      - name: Delete the sync branch
+        env:
+          BRANCH: ${{ needs.fetch.outputs.branch }}
+        run: git push origin --delete "$BRANCH"
+
+  report-failure:
+    needs: [fetch, build-wheel, nordic, release]
+    if: failure() && github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    steps:
+      - name: File or update an issue
+        env:
+          VALIDATED_TAG: ${{ needs.fetch.outputs.upstream_tag }}
+          RAW_TAG: ${{ github.event.client_payload.tag }}
+          SOURCE: ${{ needs.fetch.outputs.source }}
+          MASTER_MOVED: ${{ needs.release.outputs.master_moved }}
+          RELEASE_PUBLISHED: ${{ needs.release.outputs.release_published }}
+          PYPI_PUBLISHED: ${{ needs.release.outputs.pypi_published }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="$VALIDATED_TAG"
+          if [ -z "$TAG" ]; then
+            # Validation itself is what failed, so the raw payload is still
+            # untrusted free text: strip everything outside the tag charset
+            # and clamp the length before it reaches a public issue.
+            TAG="$(printf '%s' "$RAW_TAG" | tr -cd 'A-Za-z0-9.+-' | cut -c1-80)"
+            [ -n "$TAG" ] || TAG="(unknown)"
+          fi
+          SRC="${SOURCE:-unknown}"
+
+          if [ "$PYPI_PUBLISHED" = "true" ]; then
+            STATE="\`master\` moved, the release was cut AND **PyPI was published**. That version number cannot be reused; any fix needs a further patch release."
+          elif [ "$RELEASE_PUBLISHED" = "true" ]; then
+            STATE="\`master\` moved and the release was cut, but **PyPI was not published**. The tested wheel is attached to the release; upload it with the \`Publish Python Package\` workflow rather than rebuilding."
+          elif [ "$MASTER_MOVED" = "true" ]; then
+            STATE="\`master\` WAS fast-forwarded, but no release was cut and nothing reached PyPI."
+          else
+            STATE="\`master\` was NOT moved, no release was cut and nothing reached PyPI."
+          fi
+
+          TITLE="$SRC $TAG: pyramses sync failed"
+          BODY="$(cat <<-EOF
+          	The sync-upstream-release workflow failed for $SRC \`$TAG\`.
+
+          	Run: $RUN_URL
+
+          	$STATE
+
+          	The sync branch \`sync/$SRC-$TAG\` is left in place for inspection;
+          	delete it once the cause is fixed and re-run the workflow (Re-run all
+          	jobs, not just the failed ones) from the Actions UI.
+          	EOF
+          )"
+          # `in:title` search is word-based, not exact, so fetch titles and
+          # compare exactly instead.
+          EXISTING="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --json number,title \
+            | jq -r --arg t "$TITLE" '.[] | select(.title == $t) | .number' | head -n1)"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+            echo "Commented on existing issue #$EXISTING"
+          else
+            if ! gh issue create --repo "$GITHUB_REPOSITORY" \
+                  --title "$TITLE" --body "$BODY" --label ci; then
+              echo "WARN: creating the issue with the 'ci' label failed (it may not exist yet); filing without a label"
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
+            fi
+            echo "Opened a new issue"
+          fi
