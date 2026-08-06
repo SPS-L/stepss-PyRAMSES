@@ -293,14 +293,15 @@ the *receiving* one, mirroring how the working RAMSES → URAMSES pair is wired
 
 | Repository | Role | Secret | State as of 2026-08-06 |
 |---|---|---|---|
-| `stepss-ramses` | sender | `PYRAMSES_DISPATCH_TOKEN` | **missing** — only `URAMSES_DISPATCH_TOKEN` present |
-| `stepss-helios` | sender | `PYRAMSES_DISPATCH_TOKEN` | **missing** — no secrets configured |
+| `stepss-ramses` | sender | `PYRAMSES_DISPATCH_TOKEN` | present |
+| `stepss-helios` | sender | `PYRAMSES_DISPATCH_TOKEN` | present |
 | `stepss-pyramses` | receiver | `RAMSES_READ_TOKEN` | **missing** |
 | `stepss-pyramses` | receiver | `PYPI_API_TOKEN` | present |
 
-A `PYRAMSES_DISPATCH_TOKEN` was added to `stepss-pyramses` on 2026-08-06. That
-is the receiving side, which never posts a dispatch, so the workflow does not
-read it; it can be removed once the two senders have their own copy.
+`RAMSES_READ_TOKEN` is the one remaining gap. Without it `fetch` cannot
+download release assets from either private upstream, so every sync fails at
+its first download step. It must be able to read releases in **both**
+`stepss-ramses` and `stepss-helios` — see the open items below.
 
 ## Open items for implementation
 
