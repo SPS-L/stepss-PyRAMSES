@@ -530,7 +530,11 @@ jobs:
             # already spent.
             STATE="\`master\` moved and the release was cut, but **the PyPI upload did not report success**. It may still have completed: check https://pypi.org/project/pyramses/#history before retrying anything. Only if the version is genuinely absent, upload the tested wheel attached to the release with the \`Publish Python Package\` workflow, giving it that release tag -- never by rebuilding."
           elif [ "$MASTER_MOVED" = "true" ]; then
-            STATE="\`master\` WAS fast-forwarded, but no release was cut and nothing reported reaching PyPI."
+            # Re-running is no longer a recovery here: master now bundles this
+            # upstream tag, so the duplicate guard in `fetch` would skip the
+            # whole run. Say so, rather than leaving the generic re-run advice
+            # below to send the reader somewhere that does nothing.
+            STATE="\`master\` WAS fast-forwarded, but no release was cut and nothing reported reaching PyPI. **Re-running this workflow will now be detected as a duplicate and do nothing**, because \`master\` already bundles $SRC \`$TAG\`. Recover by hand: cut the release from the current \`master\`, attaching the \`dist\` artifact from this run, then upload that same wheel with the \`Publish Python Package\` workflow."
           else
             STATE="\`master\` was NOT moved, no release was cut and nothing reported reaching PyPI."
           fi
@@ -560,9 +564,11 @@ jobs:
 
           	$STATE$CAVEAT
 
-          	The sync branch \`sync/$SRC-$TAG\` is left in place for inspection;
-          	delete it once the cause is fixed and re-run the workflow (Re-run all
-          	jobs, not just the failed ones) from the Actions UI.
+          	The sync branch \`sync/$SRC-$TAG\` is left in place for inspection. If
+          	\`master\` was NOT moved, delete that branch once the cause is fixed and
+          	re-run the workflow (Re-run all jobs, not just the failed ones) from the
+          	Actions UI. Once \`master\` has moved, a re-run is detected as a duplicate
+          	and does nothing -- follow the state above instead.
           	EOF
           )"
           # `in:title` search is word-based, not exact, so fetch titles and

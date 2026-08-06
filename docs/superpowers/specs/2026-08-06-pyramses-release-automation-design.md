@@ -230,6 +230,12 @@ Without the `_bundled.py` comparison each repeat would refresh to
 byte-identical binaries, bump the patch again and spend another PyPI version
 that can never be reclaimed.
 
+It has one consequence worth stating: once a run has fast-forwarded `master`,
+"Re-run all jobs" is no longer a recovery, because `master` then bundles the
+tag and the guard skips the run. That state — `master` moved, no release cut —
+is recovered by hand, and `report-failure` says so explicitly rather than
+repeating the generic re-run advice.
+
 `report-failure` reports how far the run got — whether `master` moved, whether
 the GitHub release was cut, whether PyPI was published — because recovery
 differs sharply between them. The PyPI case is the one that cannot be retried:
