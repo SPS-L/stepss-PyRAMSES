@@ -237,6 +237,11 @@ jobs:
             tests/
             tools/
           if-no-files-found: error
+          # v4 defaults to overwrite: false, and the recovery this workflow
+          # prescribes for itself is 'Re-run all jobs' -- which reuses the same
+          # run, so the second attempt would 409 on the artifact the first one
+          # already uploaded.
+          overwrite: true
 
   build-wheel:
     needs: [fetch]
@@ -296,6 +301,9 @@ jobs:
           name: dist
           path: src/dist/*
           if-no-files-found: error
+          # As above: 'Re-run all jobs' reuses the run, and v4 refuses to
+          # replace an existing artifact of the same name unless told to.
+          overwrite: true
 
   nordic:
     needs: [fetch, build-wheel]
