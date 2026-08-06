@@ -1,0 +1,175 @@
+name: bundled-drift-check
+
+# sync-upstream-release.yml serialises on the pyramses-sync concurrency
+# group, which holds at most one pending run. If a second upstream release
+# dispatches while a sync is still running, the queued run is superseded and
+# cancelled *before it gets a runner* -- zero jobs execute -- so nothing
+# inside that workflow ever has a chance to report the loss. A failed run,
+# an expired RAMSES_READ_TOKEN, or an upstream that never dispatched at all
+# are silent the same way. This workflow catches all of those causes at
+# once, on a schedule, by comparing what master actually bundles against
+# what each upstream has actually released, independent of how a sync might
+# have been dropped.
+on:
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: master
+
+      - name: Read the bundled versions
+        id: bundled
+        run: |
+          BUNDLED="src/pyramses/_bundled.py"
+          [ -f "$BUNDLED" ] || { echo "FAIL: not found: $BUNDLED"; exit 1; }
+          # Same sed style tools/bump_version.sh's read_assign() uses.
+          RAMSES="$(sed -n "s/^RAMSES_VERSION[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" "$BUNDLED" | head -n1)"
+          HELIOS="$(sed -n "s/^HELIOS_VERSION[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" "$BUNDLED" | head -n1)"
+          [ -n "$RAMSES" ] || { echo "FAIL: RAMSES_VERSION not found in $BUNDLED"; exit 1; }
+          [ -n "$HELIOS" ] || { echo "FAIL: HELIOS_VERSION not found in $BUNDLED"; exit 1; }
+          echo "ramses=$RAMSES" >> "$GITHUB_OUTPUT"
+          echo "helios=$HELIOS" >> "$GITHUB_OUTPUT"
+          echo "Bundled: ramses=$RAMSES helios=$HELIOS"
+
+      - name: Compare against upstream latest
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.RAMSES_READ_TOKEN }}
+          RAMSES_BUNDLED: ${{ steps.bundled.outputs.ramses }}
+          HELIOS_BUNDLED: ${{ steps.bundled.outputs.helios }}
+        run: |
+          set -euo pipefail
+          # `gh release list ... -q '.[].tagName'` prints nothing both when
+          # the call fails AND when a repo genuinely has zero non-prerelease
+          # releases. Neither case may silently compare as "" != bundled, so
+          # both a non-zero exit (caught by set -e, since a bare `x=$(cmd)`
+          # assignment propagates the command's exit status) and an empty
+          # result are treated as a hard failure here.
+          latest_release() {
+            local repo="$1" tag
+            tag="$(gh release list --repo "$repo" --exclude-pre-releases --limit 1 --json tagName -q '.[].tagName')"
+            if [ -z "$tag" ]; then
+              echo "FAIL: no non-prerelease release found for $repo (or the API call returned nothing)" >&2
+              exit 1
+            fi
+            printf '%s' "$tag"
+          }
+
+          RAMSES_LATEST="$(latest_release SPS-L/stepss-ramses)"
+          HELIOS_LATEST="$(latest_release SPS-L/stepss-helios)"
+
+          echo "ramses: bundled=$RAMSES_BUNDLED latest=$RAMSES_LATEST"
+          echo "helios: bundled=$HELIOS_BUNDLED latest=$HELIOS_LATEST"
+
+          DRIFT=false
+          [ "$RAMSES_BUNDLED" = "$RAMSES_LATEST" ] || DRIFT=true
+          [ "$HELIOS_BUNDLED" = "$HELIOS_LATEST" ] || DRIFT=true
+
+          echo "drift=$DRIFT" >> "$GITHUB_OUTPUT"
+          echo "ramses_latest=$RAMSES_LATEST" >> "$GITHUB_OUTPUT"
+          echo "helios_latest=$HELIOS_LATEST" >> "$GITHUB_OUTPUT"
+
+          if [ "$DRIFT" = "false" ]; then
+            echo "OK: bundled versions match each upstream's latest non-prerelease release"
+          fi
+
+      - name: File or update a drift issue
+        if: steps.compare.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RAMSES_BUNDLED: ${{ steps.bundled.outputs.ramses }}
+          HELIOS_BUNDLED: ${{ steps.bundled.outputs.helios }}
+          RAMSES_LATEST: ${{ steps.compare.outputs.ramses_latest }}
+          HELIOS_LATEST: ${{ steps.compare.outputs.helios_latest }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          TITLE="Bundled libraries have drifted from upstream"
+
+          # Every heredoc below, content and terminator alike, sits at this
+          # run: block's own YAML indentation and no deeper (as the
+          # sync-ramses-release.yml workflow in stepss-uramses does with its
+          # <<-EOF heredocs): YAML strips exactly the block's base
+          # indentation from every physical line before bash ever sees it,
+          # so keeping these flush with that column is what lands the
+          # content flush left in the actual issue body, with no accidental
+          # 4-space indented-code-block markdown, and lets a plain
+          # (non-dashed) heredoc terminator match.
+          BODY="$(cat <<EOF
+          This is filed by \`bundled-drift-check\`, which runs on a daily
+          schedule. A sync run superseded while queued in the
+          \`pyramses-sync\` concurrency group is cancelled with **zero jobs
+          run**, so nothing inside \`sync-upstream-release.yml\` itself can
+          ever report that loss. This check instead compares what \`master\`
+          currently bundles against each upstream's latest non-prerelease
+          release, which catches a dropped sync regardless of cause:
+          concurrency supersession, a failed run, an expired token, or an
+          upstream that never dispatched.
+
+          Run: $RUN_URL
+          EOF
+          )"
+
+          if [ "$RAMSES_BUNDLED" != "$RAMSES_LATEST" ]; then
+          BODY="$BODY
+
+          $(cat <<EOF
+          - **ramses**: bundled \`$RAMSES_BUNDLED\`, upstream latest \`$RAMSES_LATEST\`
+
+            Recover with:
+            \`\`\`
+            gh api /repos/SPS-L/stepss-pyramses/dispatches \\
+              -f event_type=ramses-release \\
+              -f "client_payload[tag]=$RAMSES_LATEST"
+            \`\`\`
+          EOF
+          )"
+          fi
+
+          if [ "$HELIOS_BUNDLED" != "$HELIOS_LATEST" ]; then
+          BODY="$BODY
+
+          $(cat <<EOF
+          - **helios**: bundled \`$HELIOS_BUNDLED\`, upstream latest \`$HELIOS_LATEST\`
+
+            Recover with:
+            \`\`\`
+            gh api /repos/SPS-L/stepss-pyramses/dispatches \\
+              -f event_type=helios-release \\
+              -f "client_payload[tag]=$HELIOS_LATEST"
+            \`\`\`
+          EOF
+          )"
+          fi
+
+          # `in:title` search is word-based, not exact, so a search for one
+          # drifted tag could match an open issue titled for a different
+          # drift. Fetch titles and compare exactly instead (same style as
+          # stepss-uramses' sync-ramses-release.yml report-failure job).
+          EXISTING="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --json number,title \
+            | jq -r --arg t "$TITLE" '.[] | select(.title == $t) | .number' | head -n1)"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+            echo "Commented on existing issue #$EXISTING"
+          else
+            if ! gh issue create --repo "$GITHUB_REPOSITORY" \
+                  --title "$TITLE" --body "$BODY" --label ci; then
+              echo "WARN: creating the issue with the 'ci' label failed (it may not exist yet); filing without a label"
+              gh issue create --repo "$GITHUB_REPOSITORY" \
+                --title "$TITLE" --body "$BODY"
+            fi
+            echo "Opened a new issue"
+          fi
