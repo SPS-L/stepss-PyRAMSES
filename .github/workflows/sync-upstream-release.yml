@@ -475,7 +475,14 @@ jobs:
 
   report-failure:
     needs: [fetch, build-wheel, nordic, release]
-    if: failure() && github.event_name == 'repository_dispatch' && needs.fetch.outputs.duplicate != 'true'
+    # `cancelled()` matters as much as `failure()` here. A manual cancel, or
+    # the release job's timeout expiring during the PyPI upload, produces no
+    # failed job at all -- so a `failure()`-only condition reported nothing
+    # about the single most dangerous moment in the pipeline.
+    if: >-
+      (failure() || cancelled())
+      && github.event_name == 'repository_dispatch'
+      && needs.fetch.outputs.duplicate != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -489,6 +496,7 @@ jobs:
           MASTER_MOVED: ${{ needs.release.outputs.master_moved }}
           RELEASE_PUBLISHED: ${{ needs.release.outputs.release_published }}
           PYPI_PUBLISHED: ${{ needs.release.outputs.pypi_published }}
+          RELEASE_RESULT: ${{ needs.release.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -505,20 +513,42 @@ jobs:
           if [ "$PYPI_PUBLISHED" = "true" ]; then
             STATE="\`master\` moved, the release was cut AND **PyPI was published**. That version number cannot be reused; any fix needs a further patch release."
           elif [ "$RELEASE_PUBLISHED" = "true" ]; then
-            STATE="\`master\` moved and the release was cut, but **PyPI was not published**. The tested wheel is attached to the release; upload it with the \`Publish Python Package\` workflow rather than rebuilding."
+            # Deliberately not "PyPI was not published": these markers record
+            # what reported success, and an upload that was cancelled or timed
+            # out mid-flight may well have landed. Claiming it did not, and
+            # being wrong, sends the reader to re-upload a version that is
+            # already spent.
+            STATE="\`master\` moved and the release was cut, but **the PyPI upload did not report success**. It may still have completed: check https://pypi.org/project/pyramses/#history before retrying anything. Only if the version is genuinely absent, upload the tested wheel attached to the release with the \`Publish Python Package\` workflow, giving it that release tag -- never by rebuilding."
           elif [ "$MASTER_MOVED" = "true" ]; then
-            STATE="\`master\` WAS fast-forwarded, but no release was cut and nothing reached PyPI."
+            STATE="\`master\` WAS fast-forwarded, but no release was cut and nothing reported reaching PyPI."
           else
-            STATE="\`master\` was NOT moved, no release was cut and nothing reached PyPI."
+            STATE="\`master\` was NOT moved, no release was cut and nothing reported reaching PyPI."
+          fi
+
+          # A cancelled run stops steps where they stand, so a step that was
+          # in flight can have completed without ever setting its marker.
+          # Written flush with this run: block's own indentation, not indented
+          # under the `if`: it is interpolated into the <<-EOF heredoc below,
+          # whose tab-stripping applies to the literal heredoc lines and not to
+          # what a variable expands to. Any leading whitespace here would
+          # survive into the issue body as a markdown code block.
+          CAVEAT=""
+          if [ "$RELEASE_RESULT" = "cancelled" ]; then
+          CAVEAT="
+
+          **This run was cancelled** (by hand, or by a job timeout), so the state above
+          records only what had *reported* success before it stopped. A step that was in
+          flight may have completed anyway. Verify against \`master\`, the releases page
+          and https://pypi.org/project/pyramses/#history before retrying."
           fi
 
           TITLE="$SRC $TAG: pyramses sync failed"
           BODY="$(cat <<-EOF
-          	The sync-upstream-release workflow failed for $SRC \`$TAG\`.
+          	The sync-upstream-release workflow did not complete for $SRC \`$TAG\`.
 
           	Run: $RUN_URL
 
-          	$STATE
+          	$STATE$CAVEAT
 
           	The sync branch \`sync/$SRC-$TAG\` is left in place for inspection;
           	delete it once the cause is fixed and re-run the workflow (Re-run all
