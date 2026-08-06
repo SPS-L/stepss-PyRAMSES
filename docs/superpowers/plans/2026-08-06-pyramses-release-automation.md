@@ -745,7 +745,13 @@ Create `tools/update_ramses_libs.sh`:
 # PYRAMSES_LIBS_DIR overrides the destination, for tests.
 set -euo pipefail
 
-TAG="${1:?usage: $0 <ramses-release-tag> (e.g. v3.55)}"
+# An explicit check, not `${1:?msg}`: that form exits 1, but the contract
+# (and the test) require 2 for a usage error.
+if [ $# -ne 1 ]; then
+    echo "usage: $0 <ramses-release-tag> (e.g. v3.55)" >&2
+    exit 2
+fi
+TAG="$1"
 REPO="SPS-L/stepss-ramses"
 LIBS_DIR="${PYRAMSES_LIBS_DIR:-$(cd "$(dirname "$0")/.." && pwd)/src/pyramses/libs}"
 WORK_DIR="$(mktemp -d)"
