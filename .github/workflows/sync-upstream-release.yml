@@ -76,8 +76,17 @@ jobs:
           # (embedded newlines included) as one record, so ^...$ must match
           # start-to-end of the whole value. A line-oriented check here would
           # let a value like $'v3.55\ntag=EVIL' through.
-          if ! printf '%s' "$TAG" | grep -qzE '^v[0-9][0-9A-Za-z.+-]*$'; then
-            echo "FAIL: refusing tag: it must match ^v[0-9][0-9A-Za-z.+-]*\$ as a single line, with no embedded newlines"
+          #
+          # No hyphen in the character class, which is what rejects a
+          # prerelease: v3.41-rc1 exists upstream, and the only thing that
+          # previously stopped it reaching PyPI was the sender's
+          # `prerelease == false` guard -- one unticked box away from
+          # publishing rc binaries. This mirrors the hyphen rule Helios already
+          # applies on its side. No non-prerelease release tag in either
+          # upstream contains a hyphen.
+          if ! printf '%s' "$TAG" | grep -qzE '^v[0-9][0-9A-Za-z.+]*$'; then
+            echo "FAIL: refusing tag: it must match ^v[0-9][0-9A-Za-z.+]*\$ as a single line, with no embedded newlines."
+            echo "A hyphen is rejected on purpose: a prerelease tag such as v3.41-rc1 must never be published."
             exit 1
           fi
           echo "source=$SOURCE"        >> "$GITHUB_OUTPUT"
