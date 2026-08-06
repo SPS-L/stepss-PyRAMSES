@@ -295,27 +295,47 @@ the *receiving* one, mirroring how the working RAMSES → URAMSES pair is wired
 |---|---|---|---|
 | `stepss-ramses` | sender | `PYRAMSES_DISPATCH_TOKEN` | present |
 | `stepss-helios` | sender | `PYRAMSES_DISPATCH_TOKEN` | present |
-| `stepss-pyramses` | receiver | `RAMSES_READ_TOKEN` | **missing** |
+| `stepss-pyramses` | receiver | `RAMSES_READ_TOKEN` | present, scoped to read both upstreams |
 | `stepss-pyramses` | receiver | `PYPI_API_TOKEN` | present |
 
-`RAMSES_READ_TOKEN` is the one remaining gap. Without it `fetch` cannot
-download release assets from either private upstream, so every sync fails at
-its first download step. It must be able to read releases in **both**
-`stepss-ramses` and `stepss-helios` — see the open items below.
+All four are in place. The Helios reach of `RAMSES_READ_TOKEN` is still worth
+proving rather than assuming: the rehearsal run against `helios v1.2.0` is the
+cheap way to do it, and a 404 at the download step is what a too-narrow scope
+looks like.
 
-## Open items for implementation
+## Resolved before implementation
 
-1. **Secrets** must be placed as tabulated above before either upstream path
-   works.
-2. **`RAMSES_READ_TOKEN` scope.** In `stepss-uramses` it is used only against
-   `stepss-ramses`. The pyramses copy must also read `stepss-helios` releases.
-   If the token is fine-grained and scoped to a single repository, it needs
-   widening or Helios needs a separate read token. Secret scope is not
-   introspectable, so this must be confirmed by trying it.
-3. **Nordic trip semantics through the C API** — confirm how the by-design
-   collapse surfaces in pyramses, and assert on that.
-4. **Baseline reuse** — confirm the library path reproduces the executable
-   path's trajectory; generate a pyramses-specific baseline if not.
+All four open items from the original draft are settled. Measured on
+2026-08-06 against the bundled library; the implementation plan relies on
+these rather than re-deriving them.
+
+1. **Secrets** — all four placed, as tabulated above.
+2. **`RAMSES_READ_TOKEN` scope** — widened to cover both `stepss-ramses` and
+   `stepss-helios`. To be confirmed empirically by the Helios rehearsal.
+3. **Nordic trip semantics through the C API** — `execSim()` raises
+   `pyramses.globals.RAMSESError` with flag `-1`; the message names
+   `sim_minmaxvolt` and the offending bus. `getSimTime()` returns
+   `163.14000000000965`. `obs.trj` is written in full despite the exception.
+   `RAMSESError` is not exported at package level and must be imported from
+   `pyramses.globals`.
+
+   **`endSim()` must not be called after the trip.** It raises a second,
+   unrelated `RAMSESError` ("Load records") that masks the real result. This
+   is the single most likely way to write a test that fails for the wrong
+   reason.
+4. **Baseline reuse** — confirmed. The shared library reproduces the
+   standalone executable's trajectory bit-exactly (`max |diff| 0.0` across 751
+   samples × 1417 columns), so `stepss-ramses`' `nordic_baseline.npz` is
+   reused unchanged and no pyramses-specific baseline is generated.
+
+One incidental finding: the bundled RAMSES library is **v3.51**, several
+releases behind the current v3.55, and still matches the v3.55-derived
+baseline exactly. The drift is evidence for this automation; the bit-exact
+match is evidence the baseline is stable across those versions.
+
+## Implementation
+
+`docs/superpowers/plans/2026-08-06-pyramses-release-automation.md`.
 
 ## Out of scope
 
