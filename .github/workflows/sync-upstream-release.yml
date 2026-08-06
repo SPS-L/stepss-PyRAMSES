@@ -439,7 +439,8 @@ jobs:
           The wheel attached here is the exact artifact the regression gate ran
           against on Linux, Windows and macOS: the full test suite, including the
           Nordic voltage-collapse trajectory check, passed on all three before this
-          release was cut. The same file was uploaded to PyPI.
+          release was cut. It is this file, not a rebuild, that the automation
+          then uploads to PyPI.
           EOF
           # --target creates the tag as part of publishing, collapsing what
           # would otherwise be two points of no return into one.
