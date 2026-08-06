@@ -144,6 +144,7 @@ Requires the same `PYRAMSES_DISPATCH_TOKEN` secret in this repository.
 |---|---|---|
 | `.github/workflows/sync-upstream-release.yml` | new | the pipeline above |
 | `.github/workflows/python-publish.yml` | rewritten | break-glass: drop the `release:` trigger, take a release tag, upload that release's attached distributions without rebuilding |
+| `.github/workflows/bundled-drift-check.yml` | new | daily backstop: bundled vs upstream latest, and `master`'s version vs PyPI |
 | `.github/workflows/tests.yml` | extended | Nordic runs on ordinary pushes and PRs too |
 | `tools/update_ramses_libs.sh` | new | RAMSES mirror of `update_helios_libs.sh` |
 | `tools/bump_version.sh` | new | patch bump and `_bundled.py` write |
@@ -218,6 +219,7 @@ The pyramses tag is `v<new-version>`, independent of upstream tags.
 | `master` moved mid-run | `base_sha` captured in `fetch` and re-checked before the fast-forward; refuse rather than rebase a tree that was never gated |
 | Gate red on any platform | No fast-forward, no release, no PyPI. Sync branch left in place for inspection; issue filed |
 | Two upstream releases at once | `concurrency: pyramses-sync`, queued not cancelled. `fetch` checks out `master` by name, so a queued run resolves it at run time rather than replaying a stale dispatch-time SHA |
+| Run cancelled, or a sync silently dropped | `bundled-drift-check.yml`, daily. It compares `_bundled.py` against each upstream's latest release *and* `master`'s `__version__` against PyPI's latest, so both "never synced" and "released on GitHub but never published to PyPI" surface. A PyPI API failure fails the run rather than reading as no drift |
 
 The duplicate case is worth stating plainly, because two ordinary operator
 actions produce it: "Re-run all jobs" on the *sender's* release workflow
