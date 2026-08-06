@@ -1,0 +1,293 @@
+name: sync-upstream-release
+
+# Fired by stepss-ramses or stepss-helios when either publishes a release.
+# Refreshes the binaries pyramses bundles, proves the built wheel works on
+# every platform, and only then releases and publishes.
+on:
+  repository_dispatch:
+    types: [ramses-release, helios-release]
+  # Rehearsal only. The release job is gated on repository_dispatch, so no
+  # amount of hand-triggering can move master, cut a release or reach PyPI.
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Upstream to rehearse against'
+        required: true
+        type: choice
+        options: [ramses, helios]
+      tag:
+        description: 'Upstream release tag, e.g. v3.55'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Two upstream releases in quick succession must not race for master.
+concurrency:
+  group: pyramses-sync
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    outputs:
+      source: ${{ steps.vars.outputs.source }}
+      upstream_tag: ${{ steps.vars.outputs.upstream_tag }}
+      rehearsal: ${{ steps.vars.outputs.rehearsal }}
+      pyramses_tag: ${{ steps.bump.outputs.pyramses_tag }}
+      branch: ${{ steps.commit.outputs.branch }}
+      head_sha: ${{ steps.commit.outputs.head_sha }}
+      base_sha: ${{ steps.commit.outputs.base_sha }}
+    steps:
+      # The payload is untrusted input: validate its shape, and never let it
+      # reach a run: script except through env.
+      - name: Resolve and validate the trigger
+        id: vars
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          DISPATCH_TAG: ${{ github.event.client_payload.tag }}
+          INPUT_SOURCE: ${{ inputs.source }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$EVENT" = "repository_dispatch" ]; then
+            # The event type identifies the sender, so no 'source' field in
+            # the payload is ever trusted.
+            case "$ACTION" in
+              ramses-release) SOURCE=ramses ;;
+              helios-release) SOURCE=helios ;;
+              *) echo "FAIL: unexpected dispatch type '$ACTION'"; exit 1 ;;
+            esac
+            TAG="$DISPATCH_TAG"
+            REHEARSAL=false
+          else
+            SOURCE="$INPUT_SOURCE"
+            TAG="$INPUT_TAG"
+            REHEARSAL=true
+          fi
+
+          # Validate the tag as a single whole string before anything is
+          # written to $GITHUB_OUTPUT. `grep -z` treats the entire input
+          # (embedded newlines included) as one record, so ^...$ must match
+          # start-to-end of the whole value. A line-oriented check here would
+          # let a value like $'v3.55\ntag=EVIL' through.
+          if ! printf '%s' "$TAG" | grep -qzE '^v[0-9][0-9A-Za-z.+-]*$'; then
+            echo "FAIL: refusing tag: it must match ^v[0-9][0-9A-Za-z.+-]*\$ as a single line, with no embedded newlines"
+            exit 1
+          fi
+          echo "source=$SOURCE"        >> "$GITHUB_OUTPUT"
+          echo "upstream_tag=$TAG"     >> "$GITHUB_OUTPUT"
+          echo "rehearsal=$REHEARSAL"  >> "$GITHUB_OUTPUT"
+          echo "Syncing $SOURCE $TAG (rehearsal=$REHEARSAL)"
+
+      - uses: actions/checkout@v5
+        with:
+          # repository_dispatch freezes github.sha to the default branch's tip
+          # at dispatch time, and a concurrency-queued or re-run job replays
+          # that stale value. Naming the branch makes every execution resolve
+          # master as it stands right now.
+          ref: master
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Refresh the bundled libraries
+        env:
+          SOURCE: ${{ steps.vars.outputs.source }}
+          TAG: ${{ steps.vars.outputs.upstream_tag }}
+          GH_TOKEN: ${{ secrets.RAMSES_READ_TOKEN }}
+        run: |
+          if [ "$SOURCE" = "ramses" ]; then
+            bash tools/update_ramses_libs.sh "$TAG"
+          else
+            bash tools/update_helios_libs.sh "$TAG"
+          fi
+          git status --short src/pyramses/libs
+
+      - name: Bump the version and record the bundled upstreams
+        id: bump
+        env:
+          SOURCE: ${{ steps.vars.outputs.source }}
+          TAG: ${{ steps.vars.outputs.upstream_tag }}
+        run: |
+          NEW="$(bash tools/bump_version.sh "$SOURCE" "$TAG")"
+          echo "pyramses_tag=v$NEW" >> "$GITHUB_OUTPUT"
+          echo "New pyramses version: $NEW"
+          cat src/pyramses/_bundled.py
+
+      - name: Refuse to re-release an existing tag
+        if: steps.vars.outputs.rehearsal == 'false'
+        env:
+          TAG: ${{ steps.bump.outputs.pyramses_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "FAIL: tag $TAG already exists in stepss-pyramses"
+            exit 1
+          fi
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "FAIL: release $TAG already exists in stepss-pyramses"
+            exit 1
+          fi
+          echo "OK: $TAG is free"
+
+      - name: Commit to a sync branch
+        id: commit
+        env:
+          SOURCE: ${{ steps.vars.outputs.source }}
+          TAG: ${{ steps.vars.outputs.upstream_tag }}
+          PYTAG: ${{ steps.bump.outputs.pyramses_tag }}
+          REHEARSAL: ${{ steps.vars.outputs.rehearsal }}
+        run: |
+          BRANCH="sync/$SOURCE-$TAG"
+          BASE_SHA="$(git rev-parse HEAD)"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add -A src/pyramses/libs src/pyramses/_bundled.py src/pyramses/__init__.py
+          git status --short
+          git commit -m "Bundle $SOURCE $TAG and release $PYTAG"
+          if [ "$REHEARSAL" = "true" ]; then
+            # A rehearsal leaves no branch behind. The build and gate jobs
+            # check this commit out from the artifact-free local history via
+            # the workflow's own checkout of the same ref, so nothing is
+            # pushed.
+            echo "Rehearsal: not pushing $BRANCH"
+          else
+            git push origin "$BRANCH"
+          fi
+          echo "branch=$BRANCH"                 >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$BASE_SHA"             >> "$GITHUB_OUTPUT"
+
+      # A rehearsal has no pushed branch for later jobs to check out, so the
+      # refreshed tree travels as an artifact instead.
+      - name: Upload the refreshed tree (rehearsal only)
+        if: steps.vars.outputs.rehearsal == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rehearsal-tree
+          path: |
+            src/
+            tests/
+            tools/
+          if-no-files-found: error
+
+  build-wheel:
+    needs: [fetch]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Pinned to the exact commit the release job will publish, not the
+          # mutable branch head, so the tree that was gated is provably the
+          # tree that ships.
+          ref: ${{ needs.fetch.outputs.rehearsal == 'true' && 'master' || needs.fetch.outputs.head_sha }}
+
+      - name: Overlay the rehearsal tree
+        if: needs.fetch.outputs.rehearsal == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: rehearsal-tree
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Build the sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build
+          cd src
+          python -m build --sdist --wheel --outdir dist
+
+      - name: Show what was built
+        run: |
+          ls -l src/dist
+          python - <<'EOF'
+          import glob, zipfile
+          whl = glob.glob('src/dist/*.whl')[0]
+          names = zipfile.ZipFile(whl).namelist()
+          # The bundled binaries are the whole point of this package; a
+          # package_data glob that silently drops one would otherwise only
+          # surface as a runtime failure for a user on that platform.
+          for want in ('pyramses/libs/lin/ramses.so',
+                       'pyramses/libs/win/ramses.dll',
+                       'pyramses/libs/mac/ramses.so',
+                       'pyramses/libs/lin/libhelios_api.so',
+                       'pyramses/libs/win/helios_api.dll',
+                       'pyramses/libs/mac/libhelios_api.dylib'):
+              assert want in names, 'wheel is missing %s' % want
+              print('ok:', want)
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: src/dist/*
+          if-no-files-found: error
+
+  nordic:
+    needs: [fetch, build-wheel]
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-15 is arm64, which the arm64-only RAMSES macOS build needs.
+        os: [ubuntu-24.04, windows-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.fetch.outputs.rehearsal == 'true' && 'master' || needs.fetch.outputs.head_sha }}
+
+      - name: Overlay the rehearsal tree
+        if: needs.fetch.outputs.rehearsal == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: rehearsal-tree
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      # The bundled ramses.so is dynamically linked against OpenBLAS and the
+      # GCC/gfortran runtimes, which the hosted runners don't have
+      # preinstalled. Without these the gate errors at library load before it
+      # ever reaches the trajectory comparison. Windows is exempt: that RAMSES
+      # build is statically linked and self-contained. Keep in step with
+      # tests.yml, which installs the same set.
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenblas0 libgfortran5 libgomp1
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install openblas gcc
+
+      # Installing the built wheel, not the source tree: the artifact users
+      # get is the artifact the gate runs against.
+      - name: Install the built wheel
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+          python -m pip install "$(ls dist/*.whl)"
+          python -c "import pyramses; print(pyramses.__version__, pyramses.__ramses_version__, pyramses.__helios_version__)"
+
+      - name: Full test suite against the installed wheel
+        shell: bash
+        run: pytest tests/ -v

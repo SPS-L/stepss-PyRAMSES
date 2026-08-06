@@ -1,8 +1,14 @@
 name: Publish Python Package
 
+# Break-glass only. The normal path is sync-upstream-release.yml, which
+# publishes the exact wheel its gate tested. Leaving `release: published`
+# here would race that upload for the same version, and rebuild from master
+# rather than shipping the tested bytes.
+#
+# Use this when the sync workflow cut a release and tagged it, but the PyPI
+# upload alone failed. Download the wheel from that release first.
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 jobs:
   deploy:

@@ -11,7 +11,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Same images the release gate pins, so an ordinary PR fails here
+        # rather than during a release.
+        os: [ubuntu-24.04, windows-latest, macos-15]
         python-version: ['3.10', '3.12']
 
     runs-on: ${{ matrix.os }}
