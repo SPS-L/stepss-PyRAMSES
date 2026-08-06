@@ -117,12 +117,34 @@ jobs:
       # already records this exact tag for this source, the binaries are
       # already bundled, and going on would spend a second, unreclaimable PyPI
       # version on byte-identical content.
+      #
+      # The escape hatch: `client_payload[force]`. What _bundled.py cannot tell
+      # us is *how* the tag got there. A bundle refreshed by hand outside this
+      # automation -- or one this automation wrote but never got as far as
+      # publishing -- is byte-for-byte indistinguishable from a genuine
+      # duplicate, yet in those cases the guard blocks the one run that is
+      # actually needed: PyPI still ships the older binaries. Setting force to
+      # exactly the string 'true' bypasses this guard and nothing else; every
+      # other guard (tag validation, rehearsal isolation, the three-platform
+      # gate, the fast-forward check) stays exactly as it was.
+      #
+      # This is a deliberate manual action, taken by a human who has checked
+      # https://pypi.org/project/pyramses/#history and knows a new version is
+      # warranted. An upstream repository must NEVER set it automatically: a
+      # sender that always forced would turn every re-run of its own release
+      # workflow into another spent PyPI version.
+      #
+      # The payload is untrusted, so force is read only through env: and
+      # compared against the literal 'true'. Absent, empty, 'false', 'TRUE',
+      # '1' or anything else leaves the guard fully in force -- it fails
+      # closed.
       - name: Detect a duplicate dispatch
         id: dup
         env:
           SOURCE: ${{ steps.vars.outputs.source }}
           TAG: ${{ steps.vars.outputs.upstream_tag }}
           REHEARSAL: ${{ steps.vars.outputs.rehearsal }}
+          FORCE: ${{ github.event.client_payload.force }}
         run: |
           BUNDLED="src/pyramses/_bundled.py"
           if [ ! -f "$BUNDLED" ]; then
@@ -146,6 +168,20 @@ jobs:
               # pipeline is tested, and a rehearsal can reach neither master nor
               # PyPI. Never let this guard block that path.
               echo "Rehearsal: $TAG is already bundled; continuing anyway."
+            elif [ "$FORCE" = "true" ]; then
+              # Loud on purpose: this line is the audit trail for a deliberate
+              # re-publish over an already-bundled tag.
+              echo "=================================================================="
+              echo "FORCED: proceeding over an already-bundled tag."
+              echo "master already bundles $SOURCE $TAG, so this run would normally be"
+              echo "classified a duplicate and skipped entirely. client_payload[force]"
+              echo "was set to exactly 'true', so the duplicate guard -- and only the"
+              echo "duplicate guard -- is bypassed."
+              echo "This run will therefore refresh, bump, build, gate on all three"
+              echo "platforms, fast-forward master, cut a release AND SPEND A NEW PyPI"
+              echo "VERSION. A PyPI version can never be reclaimed. Someone asked for"
+              echo "this deliberately."
+              echo "=================================================================="
             else
               DUPLICATE=true
               echo "DUPLICATE: $SOURCE $TAG is already bundled on master."
@@ -154,6 +190,8 @@ jobs:
               echo "byte-identical binaries would spend a second PyPI version, and a"
               echo "PyPI version can never be reclaimed. This is an expected, benign"
               echo "event -- no issue is filed and nothing is released."
+              echo "If this bundle was refreshed outside the automation and has never"
+              echo "been published, re-dispatch by hand with -f 'client_payload[force]=true'."
             fi
           fi
           echo "duplicate=$DUPLICATE" >> "$GITHUB_OUTPUT"

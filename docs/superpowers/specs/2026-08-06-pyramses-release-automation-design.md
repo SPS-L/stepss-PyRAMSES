@@ -214,7 +214,7 @@ The pyramses tag is `v<new-version>`, independent of upstream tags.
 |---|---|
 | Malformed dispatch tag | `grep -qzE '^v[0-9][0-9A-Za-z.+]*$'` against the whole string, so an embedded newline cannot smuggle a second `key=value` into `$GITHUB_OUTPUT`. Source is taken from the event type, never the payload |
 | Prerelease tag dispatched | The receiver's tag pattern excludes the hyphen, so `v3.41-rc1` is refused whatever the sender did. Previously only RAMSES' `prerelease == false` guard stopped it — one unticked box away from publishing rc binaries to PyPI. This is the same rule Helios applies sender-side |
-| Duplicate dispatch (same upstream tag twice) | `fetch` compares the incoming tag against the entry `master`'s `_bundled.py` already records for the dispatching source. On a match it sets a `duplicate` output, skips the rest of `fetch`, and `build-wheel`, `nordic` and `release` are all skipped. No issue is filed: a duplicate is expected, not a failure. Rehearsals are exempt, since rehearsing against an already-bundled tag is how the pipeline is tested |
+| Duplicate dispatch (same upstream tag twice) | `fetch` compares the incoming tag against the entry `master`'s `_bundled.py` already records for the dispatching source. On a match it sets a `duplicate` output, skips the rest of `fetch`, and `build-wheel`, `nordic` and `release` are all skipped. No issue is filed: a duplicate is expected, not a failure. Rehearsals are exempt, since rehearsing against an already-bundled tag is how the pipeline is tested. An explicit `client_payload[force]` overrides the guard — see below |
 | Pyramses tag already exists | `fetch` refuses if the computed pyramses tag exists as either a tag or a release. This is a backstop against a hand-forced state only — the tag is a fresh patch bump off `master`, so on the normal path it can never pre-exist, and it catches no duplicate dispatch |
 | Expected asset missing | Hard fail in `fetch`, naming the asset, before anything is committed |
 | `master` moved mid-run | `base_sha` captured in `fetch` and re-checked before the fast-forward; refuse rather than rebase a tree that was never gated |
@@ -229,6 +229,52 @@ command `bundled-drift-check.yml` prints into an issue can be pasted twice.
 Without the `_bundled.py` comparison each repeat would refresh to
 byte-identical binaries, bump the patch again and spend another PyPI version
 that can never be reclaimed.
+
+### Forcing a run over an already-bundled tag
+
+The guard reads `_bundled.py`, which records *what* is bundled but not *how it
+got there* or *whether it was ever published*. A bundle refreshed by hand
+outside the automation — or one the automation wrote but never got as far as
+uploading — is byte-for-byte indistinguishable from a genuine duplicate. In
+that state the guard is correct but unhelpful: it skips the one run that is
+actually needed, because PyPI still ships the older binaries.
+
+The escape hatch is an optional `client_payload[force]` field. When it is
+**exactly** the string `true`, the duplicate guard is bypassed and the run
+proceeds normally:
+
+```
+gh api /repos/SPS-L/stepss-pyramses/dispatches \
+  -f event_type=ramses-release \
+  -f "client_payload[tag]=v3.55" \
+  -f "client_payload[force]=true"
+```
+
+(`-f` only, never `-F`: `-F` reads a value from a local file when it starts
+with `@`.)
+
+Three properties matter.
+
+It **fails closed**. Like `tag`, `force` is untrusted payload: it reaches the
+script only through `env:` and is compared against the literal `true`. Absent,
+empty, `false`, `TRUE`, `1` or any other value leaves the guard fully in force.
+There is no loose truthiness test to exploit.
+
+It bypasses the duplicate guard and **nothing else**. Tag validation, the
+rehearsal isolation on `release` (`github.event_name == 'repository_dispatch'`
+and `rehearsal == 'false'`), the three-platform gate and the fast-forward
+check are all untouched. A forced run is an ordinary run that happens to start
+from an already-bundled tag.
+
+It is **loud**. The bypass prints a banner naming the source and tag and
+stating that the run will spend a new PyPI version. That line is the audit
+trail for a deliberate re-publish.
+
+It is a manual action for a human who has checked
+https://pypi.org/project/pyramses/#history and concluded a new version is
+warranted. An upstream must never set it automatically — a sender that always
+forced would turn every re-run of its own release workflow into another spent
+PyPI version, which is exactly what the guard exists to prevent.
 
 It has one consequence worth stating: once a run has fast-forwarded `master`,
 "Re-run all jobs" is no longer a recovery, because `master` then bundles the
