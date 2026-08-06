@@ -38,6 +38,8 @@ from .simulator import sim
 from .extractor import extractor, curplot, cur
 from . import helios
 from .helios import HeliosSession
+from ._bundled import RAMSES_VERSION as __ramses_version__
+from ._bundled import HELIOS_VERSION as __helios_version__
 
 __all__ = ["cfg", "sim", "extractor", "cur", "curplot", "helios",
            "HeliosSession", "HeliosError"]
