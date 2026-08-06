@@ -1,7 +1,11 @@
 # PyRAMSES upstream release automation — design
 
 Date: 2026-08-06
-Status: approved, not yet implemented
+Status: implemented and verified live on 2026-08-06. The first run through the
+full path (`repository_dispatch` → refresh → three-platform gate → release →
+PyPI) published `pyramses 0.3.1`, carrying RAMSES v3.55; PyPI had been serving
+RAMSES 3.51 until then. Implementation plan:
+`docs/superpowers/plans/2026-08-06-pyramses-release-automation.md`.
 
 ## Problem
 

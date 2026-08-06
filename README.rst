@@ -184,6 +184,23 @@ Main Classes
    * - ``pyramses.helios.HeliosSession``
      - Runs AC power flows with the Helios engine: load, modify, solve, contingency screening, and file exports.
 
+Bundled Binaries Are CI-Managed
+-------------------------------
+
+The native libraries under ``src/pyramses/libs/`` and the version record in
+``src/pyramses/_bundled.py`` are written by automation, not by hand. When
+RAMSES or Helios publishes a release, a workflow refreshes the affected
+libraries, bumps the patch version, and publishes a new PyRAMSES release only
+after the full test suite — including the Nordic voltage-collapse regression —
+passes on Linux, Windows and macOS.
+
+Check what a given release bundles with::
+
+   python -c "import pyramses; print(pyramses.__ramses_version__, pyramses.__helios_version__)"
+
+Contributors should not edit those paths directly; a manual change is
+overwritten by the next sync.
+
 Documentation
 -------------
 
