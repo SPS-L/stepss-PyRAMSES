@@ -36,7 +36,7 @@ fi
 # RAMSES builds share the filename ramses.so); the header is platform-
 # independent and stays at the libs/ root.
 install -m 644 helios-api-linux-x86_64/libhelios_api.so      "$LIBS_DIR/lin/"
-install -m 644 helios-api-macos-universal/libhelios_api.dylib "$LIBS_DIR/mac/"
+install -m 644 helios-api-macos-arm64/libhelios_api.dylib     "$LIBS_DIR/mac/"
 install -m 644 helios-api-windows-x64/helios_api.dll          "$LIBS_DIR/win/"
 install -m 644 helios-api-linux-x86_64/helios_api.h           "$LIBS_DIR/"
 

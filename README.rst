@@ -77,7 +77,7 @@ These packages provide:
 - **openblas** - OpenBLAS BLAS/LAPACK routines used by the solver
 - **gcc** - GNU Fortran (``libgfortran``) and OpenMP (``libgomp``) runtimes required by the Fortran components of RAMSES
 
-RAMSES on macOS is supported on Apple Silicon (arm64) only. If ``pyramses`` fails to import with a shared-library error, install the packages above and retry.
+macOS is supported on Apple Silicon (arm64) only: both the bundled RAMSES and Helios binaries are arm64. If ``pyramses`` fails to import with a shared-library error, install the packages above and retry.
 
 Platform Support
 ~~~~~~~~~~~~~~~~
@@ -97,7 +97,7 @@ Platform Support
      - Full support
    * - macOS
      - ``ramses.so``, ``libhelios_api.dylib``
-     - Full support; RAMSES requires Apple Silicon (arm64) and Homebrew ``openblas``/``gcc`` (see `macOS System Prerequisites`_); Helios is a universal binary
+     - Apple Silicon (arm64) only; RAMSES additionally needs Homebrew ``openblas``/``gcc`` (see `macOS System Prerequisites`_)
 
 The free version is limited to 1000 buses and 2 OpenMP cores. See the `License <https://stepss.sps-lab.org/getting-started/license/>`_ page for full terms.
 

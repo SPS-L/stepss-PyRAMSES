@@ -187,14 +187,14 @@ Helios assets are not:
 | Asset | Extract to |
 |---|---|
 | `helios-api-linux-x86_64.tar.gz` | `src/pyramses/libs/lin/libhelios_api.so` |
-| `helios-api-macos-universal.tar.gz` | `src/pyramses/libs/mac/libhelios_api.dylib` |
+| `helios-api-macos-arm64.tar.gz` | `src/pyramses/libs/mac/libhelios_api.dylib` |
 | `helios-api-windows-x64.zip` | `src/pyramses/libs/win/helios_api.dll` |
 | (from the Linux archive) | `src/pyramses/libs/helios_api.h` |
 
-Note the macOS asymmetry: the RAMSES macOS build is arm64-only, while the
-Helios macOS build is a universal binary. The `macos-15` runner is arm64 and
-satisfies both. macOS RAMSES keeps the filename `ramses.so`, not `.dylib` —
-pyramses separates platforms by directory, not by extension.
+Both macOS builds are arm64-only, and the `macos-15` runner is arm64, so the
+wheel test job exercises them natively. macOS RAMSES keeps the filename
+`ramses.so`, not `.dylib` — pyramses separates platforms by directory, not by
+extension.
 
 ### Versioning
 
