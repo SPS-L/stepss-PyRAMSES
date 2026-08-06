@@ -31,7 +31,7 @@ Key Features
 - **Trajectory post-processing** - extract and plot time-series results from Fortran binary trajectory files
 - **Parameter sweeps** - script multiple simulations with varying parameters or disturbances
 - **Eigenanalysis support** - export system Jacobian matrices for small-signal stability analysis
-- **Bundled binaries** - pre-compiled RAMSES shared libraries (``ramses.dll`` / ``ramses.so``) for Windows and Linux, plus Helios power-flow libraries for Windows, Linux, and macOS
+- **Bundled binaries** - pre-compiled RAMSES shared libraries (``ramses.dll`` / ``ramses.so``) for Windows, Linux, and macOS, plus Helios power-flow libraries for Windows, Linux, and macOS
 - **AC power flow** - the ``pyramses.helios`` module runs Helios power flows: solve, modify with redispatch, N-1 contingency screening, and file exports
 - **Scientific Python integration** - works natively with NumPy, SciPy, Matplotlib, and Jupyter
 
@@ -65,6 +65,20 @@ These packages provide:
 
 On most desktop Linux distributions these are already present. If ``pyramses`` fails to import with a shared-library error, install the packages above and retry.
 
+macOS System Prerequisites
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+On macOS, the following system libraries must be installed before running PyRAMSES::
+
+   brew install openblas gcc
+
+These packages provide:
+
+- **openblas** - OpenBLAS BLAS/LAPACK routines used by the solver
+- **gcc** - GNU Fortran (``libgfortran``) and OpenMP (``libgomp``) runtimes required by the Fortran components of RAMSES
+
+RAMSES on macOS is supported on Apple Silicon (arm64) only. If ``pyramses`` fails to import with a shared-library error, install the packages above and retry.
+
 Platform Support
 ~~~~~~~~~~~~~~~~
 
@@ -82,8 +96,8 @@ Platform Support
      - ``ramses.so``, ``libhelios_api.so``
      - Full support
    * - macOS
-     - ``libhelios_api.dylib``
-     - Helios power flow only (universal binary); RAMSES dynamic simulation is not available on macOS
+     - ``ramses.so``, ``libhelios_api.dylib``
+     - Full support; RAMSES requires Apple Silicon (arm64) and Homebrew ``openblas``/``gcc`` (see `macOS System Prerequisites`_); Helios is a universal binary
 
 The free version is limited to 1000 buses and 2 OpenMP cores. See the `License <https://stepss.sps-lab.org/getting-started/license/>`_ page for full terms.
 
