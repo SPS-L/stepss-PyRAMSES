@@ -1,0 +1,21 @@
+# solver settings
+
+$NEWTON_TOLER 0.0001 0.0001 0.0001 ;
+$FIN_DIFFER 0.00001 0.00001       ;
+$PLOT_STEP  0.001                 ;
+$GP_REFRESH_RATE 1.0              ;
+$DISP_PROF F                      ;
+$NB_THREADS 2                     ;
+$T_LOAD_REST 0.005                ;
+$FULL_UPDATE F                    ;
+$SKIP_CONV T                      ;
+$LATENCY 20. F                    ;
+$SCHEME DE                        ; 
+$OMEGA_REF COI                    ;
+$OMP DYN 0                        ;
+$SPARSE_SOLVER KLU                ;
+
+$NET_FREQ_UPD F ;
+
+DCTL SIM_MINMAXVOLT Voltages 0.5 1.2 1.3 0 ;
+DCTL SIM_MINMAXSPEED Rotorspeeds 0.9 1.05 1.2 0 ;
