@@ -63,6 +63,54 @@ ast.parse(open('$TMPD/src/pyramses/_bundled.py').read())
 ast.parse(open('$TMPD/src/pyramses/__init__.py').read())
 " && ok "both files still parse as Python" || fail "a rewritten file is not valid Python"
 
+# --- regression: a failed __version__ rewrite must not still publish ------
+# Two identical __version__ lines make the rewrite's "exactly one match"
+# guard fire. The script must detect that failure and abort *before*
+# touching _bundled.py, print nothing on stdout, and exit non-zero.
+DUPD="$TMPD/dup"
+mkdir -p "$DUPD/src/pyramses"
+cat > "$DUPD/src/pyramses/__init__.py" <<'EOF'
+__package_name__ = "pyramses"
+__version__ = '0.3.0'
+__version__ = '0.3.0'
+__author__ = "Petros Aristidou"
+EOF
+cat > "$DUPD/src/pyramses/_bundled.py" <<'EOF'
+RAMSES_VERSION = "v3.51"
+HELIOS_VERSION = "v1.2.0"
+EOF
+BUNDLED_BEFORE="$(cat "$DUPD/src/pyramses/_bundled.py")"
+OUT="$(PYRAMSES_ROOT="$DUPD" "$SCRIPT" ramses v3.60 2>/dev/null)"
+RC=$?
+[ "$RC" -ne 0 ] && ok "duplicated __version__ exits non-zero" \
+    || fail "duplicated __version__ should exit non-zero, got $RC"
+[ -z "$OUT" ] && ok "duplicated __version__ prints nothing on stdout" \
+    || fail "duplicated __version__ printed '$OUT' on stdout"
+BUNDLED_AFTER="$(cat "$DUPD/src/pyramses/_bundled.py")"
+[ "$BUNDLED_AFTER" = "$BUNDLED_BEFORE" ] && ok "duplicated __version__ leaves _bundled.py untouched" \
+    || fail "_bundled.py was modified despite a failed rewrite"
+
+# --- regression: a two-component version must be rejected, not misparsed --
+# REST="${CUR#*.}" returns REST unchanged when it has no dot, so PATCH
+# silently aliases MINOR. '0.3' must be rejected up front, not bumped.
+TWOD="$TMPD/twocomponent"
+mkdir -p "$TWOD/src/pyramses"
+cat > "$TWOD/src/pyramses/__init__.py" <<'EOF'
+__package_name__ = "pyramses"
+__version__ = '0.3'
+__author__ = "Petros Aristidou"
+EOF
+cat > "$TWOD/src/pyramses/_bundled.py" <<'EOF'
+RAMSES_VERSION = "v3.51"
+HELIOS_VERSION = "v1.2.0"
+EOF
+OUT="$(PYRAMSES_ROOT="$TWOD" "$SCRIPT" ramses v3.60 2>/dev/null)"
+RC=$?
+[ "$RC" -ne 0 ] && ok "two-component version exits non-zero" \
+    || fail "two-component version should exit non-zero, got $RC"
+[ -z "$OUT" ] && ok "two-component version prints nothing on stdout" \
+    || fail "two-component version printed '$OUT' on stdout"
+
 echo ""
 if [ "$FAILURES" -eq 0 ]; then echo "PASS: all assertions held"; exit 0; fi
 echo "$FAILURES failure(s)"; exit 1
