@@ -38,6 +38,7 @@ jobs:
       source: ${{ steps.vars.outputs.source }}
       upstream_tag: ${{ steps.vars.outputs.upstream_tag }}
       rehearsal: ${{ steps.vars.outputs.rehearsal }}
+      duplicate: ${{ steps.dup.outputs.duplicate }}
       pyramses_tag: ${{ steps.bump.outputs.pyramses_tag }}
       branch: ${{ steps.commit.outputs.branch }}
       head_sha: ${{ steps.commit.outputs.head_sha }}
@@ -97,7 +98,59 @@ jobs:
         with:
           python-version: '3.12'
 
+      # A duplicate dispatch is not hypothetical. 'Re-run all jobs' on the
+      # sender's release workflow replays `event_name == 'release'` and fires
+      # the dispatch again, and the recovery command that
+      # bundled-drift-check.yml prints into an issue can be pasted twice. The
+      # computed pyramses tag cannot detect that: it is a fresh patch bump off
+      # master, so it never pre-exists and the check below it is vacuous
+      # against this case. What does detect it is _bundled.py -- if master
+      # already records this exact tag for this source, the binaries are
+      # already bundled, and going on would spend a second, unreclaimable PyPI
+      # version on byte-identical content.
+      - name: Detect a duplicate dispatch
+        id: dup
+        env:
+          SOURCE: ${{ steps.vars.outputs.source }}
+          TAG: ${{ steps.vars.outputs.upstream_tag }}
+          REHEARSAL: ${{ steps.vars.outputs.rehearsal }}
+        run: |
+          BUNDLED="src/pyramses/_bundled.py"
+          if [ ! -f "$BUNDLED" ]; then
+            echo "WARN: $BUNDLED not found, so nothing can be a duplicate of it"
+            echo "duplicate=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$SOURCE" = "ramses" ]; then
+            NAME="RAMSES_VERSION"
+          else
+            NAME="HELIOS_VERSION"
+          fi
+          # Same sed style tools/bump_version.sh's read_assign() uses.
+          CURRENT="$(sed -n "s/^$NAME[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" "$BUNDLED" | head -n1)"
+          echo "master bundles $NAME=${CURRENT:-(unset)}; the incoming $SOURCE tag is $TAG"
+
+          DUPLICATE=false
+          if [ "$CURRENT" = "$TAG" ]; then
+            if [ "$REHEARSAL" = "true" ]; then
+              # Rehearsing against an already-bundled tag is precisely how this
+              # pipeline is tested, and a rehearsal can reach neither master nor
+              # PyPI. Never let this guard block that path.
+              echo "Rehearsal: $TAG is already bundled; continuing anyway."
+            else
+              DUPLICATE=true
+              echo "DUPLICATE: $SOURCE $TAG is already bundled on master."
+              echo "This dispatch repeats one that already completed. The refresh, the"
+              echo "build, the gate and the release are all skipped: republishing"
+              echo "byte-identical binaries would spend a second PyPI version, and a"
+              echo "PyPI version can never be reclaimed. This is an expected, benign"
+              echo "event -- no issue is filed and nothing is released."
+            fi
+          fi
+          echo "duplicate=$DUPLICATE" >> "$GITHUB_OUTPUT"
+
       - name: Refresh the bundled libraries
+        if: steps.dup.outputs.duplicate != 'true'
         env:
           SOURCE: ${{ steps.vars.outputs.source }}
           TAG: ${{ steps.vars.outputs.upstream_tag }}
@@ -112,6 +165,7 @@ jobs:
 
       - name: Bump the version and record the bundled upstreams
         id: bump
+        if: steps.dup.outputs.duplicate != 'true'
         env:
           SOURCE: ${{ steps.vars.outputs.source }}
           TAG: ${{ steps.vars.outputs.upstream_tag }}
@@ -121,8 +175,12 @@ jobs:
           echo "New pyramses version: $NEW"
           cat src/pyramses/_bundled.py
 
+      # A backstop against a hand-forced state (a tag or release created out of
+      # band), not against a duplicate dispatch: the tag it checks is a fresh
+      # patch bump off master and so cannot pre-exist on the normal path. The
+      # duplicate guard is the step above.
       - name: Refuse to re-release an existing tag
-        if: steps.vars.outputs.rehearsal == 'false'
+        if: steps.dup.outputs.duplicate != 'true' && steps.vars.outputs.rehearsal == 'false'
         env:
           TAG: ${{ steps.bump.outputs.pyramses_tag }}
           GH_TOKEN: ${{ github.token }}
@@ -139,6 +197,7 @@ jobs:
 
       - name: Commit to a sync branch
         id: commit
+        if: steps.dup.outputs.duplicate != 'true'
         env:
           SOURCE: ${{ steps.vars.outputs.source }}
           TAG: ${{ steps.vars.outputs.upstream_tag }}
@@ -169,7 +228,7 @@ jobs:
       # A rehearsal has no pushed branch for later jobs to check out, so the
       # refreshed tree travels as an artifact instead.
       - name: Upload the refreshed tree (rehearsal only)
-        if: steps.vars.outputs.rehearsal == 'true'
+        if: steps.dup.outputs.duplicate != 'true' && steps.vars.outputs.rehearsal == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: rehearsal-tree
@@ -181,6 +240,11 @@ jobs:
 
   build-wheel:
     needs: [fetch]
+    # A duplicate dispatch stops here: fetch changed nothing, so there is
+    # nothing to build, gate or release. Skipping rather than failing is
+    # deliberate -- a duplicate is expected and benign, and report-failure
+    # must not file an issue for it.
+    if: needs.fetch.outputs.duplicate != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -235,6 +299,7 @@ jobs:
 
   nordic:
     needs: [fetch, build-wheel]
+    if: needs.fetch.outputs.duplicate != 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -295,8 +360,13 @@ jobs:
   release:
     needs: [fetch, build-wheel, nordic]
     # Belt and braces: a workflow_dispatch rehearsal must never reach this
-    # job. Either condition alone would do; both are cheap.
-    if: github.event_name == 'repository_dispatch' && needs.fetch.outputs.rehearsal == 'false'
+    # job. Either of the first two conditions alone would do; both are cheap.
+    # The third stops a duplicate dispatch from spending a second PyPI
+    # version; build-wheel already skips, which would skip this job anyway.
+    if: >-
+      github.event_name == 'repository_dispatch'
+      && needs.fetch.outputs.rehearsal == 'false'
+      && needs.fetch.outputs.duplicate != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -397,7 +467,7 @@ jobs:
 
   report-failure:
     needs: [fetch, build-wheel, nordic, release]
-    if: failure() && github.event_name == 'repository_dispatch'
+    if: failure() && github.event_name == 'repository_dispatch' && needs.fetch.outputs.duplicate != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

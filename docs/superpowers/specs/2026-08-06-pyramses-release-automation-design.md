@@ -206,11 +206,20 @@ The pyramses tag is `v<new-version>`, independent of upstream tags.
 | Failure | Response |
 |---|---|
 | Malformed dispatch tag | `grep -qzE '^v[0-9][0-9A-Za-z.+-]*$'` against the whole string, so an embedded newline cannot smuggle a second `key=value` into `$GITHUB_OUTPUT`. Source is taken from the event type, never the payload |
-| Tag already synced | `fetch` refuses if the computed pyramses tag exists as either a tag or a release, making a duplicate dispatch a no-op |
+| Duplicate dispatch (same upstream tag twice) | `fetch` compares the incoming tag against the entry `master`'s `_bundled.py` already records for the dispatching source. On a match it sets a `duplicate` output, skips the rest of `fetch`, and `build-wheel`, `nordic` and `release` are all skipped. No issue is filed: a duplicate is expected, not a failure. Rehearsals are exempt, since rehearsing against an already-bundled tag is how the pipeline is tested |
+| Pyramses tag already exists | `fetch` refuses if the computed pyramses tag exists as either a tag or a release. This is a backstop against a hand-forced state only — the tag is a fresh patch bump off `master`, so on the normal path it can never pre-exist, and it catches no duplicate dispatch |
 | Expected asset missing | Hard fail in `fetch`, naming the asset, before anything is committed |
 | `master` moved mid-run | `base_sha` captured in `fetch` and re-checked before the fast-forward; refuse rather than rebase a tree that was never gated |
 | Gate red on any platform | No fast-forward, no release, no PyPI. Sync branch left in place for inspection; issue filed |
 | Two upstream releases at once | `concurrency: pyramses-sync`, queued not cancelled. `fetch` checks out `master` by name, so a queued run resolves it at run time rather than replaying a stale dispatch-time SHA |
+
+The duplicate case is worth stating plainly, because two ordinary operator
+actions produce it: "Re-run all jobs" on the *sender's* release workflow
+replays `event_name == 'release'` and dispatches again, and the recovery
+command `bundled-drift-check.yml` prints into an issue can be pasted twice.
+Without the `_bundled.py` comparison each repeat would refresh to
+byte-identical binaries, bump the patch again and spend another PyPI version
+that can never be reclaimed.
 
 `report-failure` reports how far the run got — whether `master` moved, whether
 the GitHub release was cut, whether PyPI was published — because recovery
