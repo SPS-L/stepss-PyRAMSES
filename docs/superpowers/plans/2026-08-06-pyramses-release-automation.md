@@ -1139,6 +1139,22 @@ jobs:
           name: dist
           path: dist
 
+      # The bundled ramses.so is dynamically linked against OpenBLAS and the
+      # GCC/gfortran runtimes, which the hosted runners don't have
+      # preinstalled. Without these the gate errors at library load before it
+      # ever reaches the trajectory comparison. Windows is exempt: that RAMSES
+      # build is statically linked and self-contained. Keep in step with
+      # tests.yml, which installs the same set.
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenblas0 libgfortran5 libgomp1
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install openblas gcc
+
       # Installing the built wheel, not the source tree: the artifact users
       # get is the artifact the gate runs against.
       - name: Install the built wheel
