@@ -42,7 +42,7 @@ jobs:
           # Same shape the sync workflow enforces on upstream tags, hyphen
           # excluded so a prerelease tag cannot be published by hand either.
           if ! printf '%s' "$TAG" | grep -qzE '^v[0-9][0-9A-Za-z.+]*$'; then
-            echo "FAIL: refusing tag: it must match ^v[0-9][0-9A-Za-z.+]\$ as a single line"
+            echo "FAIL: refusing tag: it must match ^v[0-9][0-9A-Za-z.+]*\$ as a single line, with no hyphen"
             exit 1
           fi
           mkdir -p dist
@@ -52,7 +52,10 @@ jobs:
 
           # A release with no wheel, or with more than one, is not the state
           # this workflow is for; uploading blind would be a guess.
-          WHEELS="$(ls dist/*.whl 2>/dev/null | wc -l)"
+          # `find`, not `ls dist/*.whl`: an unmatched glob makes `ls` exit
+          # non-zero, which under `set -o pipefail` would abort the step before
+          # this clearer message is ever printed.
+          WHEELS="$(find dist -maxdepth 1 -name '*.whl' | wc -l)"
           if [ "$WHEELS" -ne 1 ]; then
             echo "FAIL: expected exactly one .whl attached to $TAG, found $WHEELS"
             exit 1
@@ -61,7 +64,7 @@ jobs:
           # The tag and the wheel must describe the same version, or the
           # release's assets were not produced by the sync workflow.
           VERSION="${TAG#v}"
-          WHEEL="$(ls dist/*.whl)"
+          WHEEL="$(find dist -maxdepth 1 -name '*.whl')"
           case "$(basename "$WHEEL")" in
             pyramses-"$VERSION"-*) echo "OK: $WHEEL matches $TAG" ;;
             *) echo "FAIL: $WHEEL does not match tag $TAG (expected pyramses-$VERSION-*)"; exit 1 ;;
