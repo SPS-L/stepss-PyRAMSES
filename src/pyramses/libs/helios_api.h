@@ -31,10 +31,17 @@ typedef void* HeliosHandle;
 
 /* Status codes returned by the API. Success is HELIOS_OK (0) or, where
  * documented, a non-negative count. Any negative value is an error and
- * sets the per-handle error string (see helios_get_last_error). */
+ * sets the per-handle error string (see helios_get_last_error).
+ *
+ * HELIOS_OK and HELIOS_NOT_CONVERGED deliberately share their values with
+ * the `helios` CLI's process exit status, so a caller can treat the library
+ * and the command-line tool interchangeably. Non-convergence covers every
+ * outcome where the solve ran but produced no usable answer (max iterations,
+ * divergence, singular Jacobian); use helios_get_solver_status to tell them
+ * apart. */
 typedef enum HeliosStatus {
     HELIOS_OK                   =  0,
-    HELIOS_NOT_CONVERGED        =  1,  /* solve ran but did not converge */
+    HELIOS_NOT_CONVERGED        =  2,  /* solve ran but did not converge */
     HELIOS_ERROR                = -1,  /* unspecified error */
     HELIOS_ERR_NULL_ARG         = -2,  /* NULL handle or required pointer */
     HELIOS_ERR_NOT_FOUND        = -3,  /* name lookup failed */
