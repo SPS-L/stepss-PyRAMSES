@@ -8,4 +8,4 @@ Only the upstream that triggered a sync changes; the other is carried forward.
 """
 
 RAMSES_VERSION = "v3.55"
-HELIOS_VERSION = "v1.2.0"
+HELIOS_VERSION = "v1.3.0"
