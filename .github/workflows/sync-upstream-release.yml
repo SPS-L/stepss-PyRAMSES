@@ -94,7 +94,7 @@ jobs:
           echo "rehearsal=$REHEARSAL"  >> "$GITHUB_OUTPUT"
           echo "Syncing $SOURCE $TAG (rehearsal=$REHEARSAL)"
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # repository_dispatch freezes github.sha to the default branch's tip
           # at dispatch time, and a concurrency-queued or re-run job replays
@@ -103,7 +103,7 @@ jobs:
           ref: master
           fetch-depth: 0
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -276,7 +276,7 @@ jobs:
       # refreshed tree travels as an artifact instead.
       - name: Upload the refreshed tree (rehearsal only)
         if: steps.dup.outputs.duplicate != 'true' && steps.vars.outputs.rehearsal == 'true'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: rehearsal-tree
           path: |
@@ -300,7 +300,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           # Pinned to the exact commit the release job will publish, not the
           # mutable branch head, so the tree that was gated is provably the
@@ -309,11 +309,11 @@ jobs:
 
       - name: Overlay the rehearsal tree
         if: needs.fetch.outputs.rehearsal == 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: rehearsal-tree
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -343,7 +343,7 @@ jobs:
               print('ok:', want)
           EOF
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: src/dist/*
@@ -363,21 +363,21 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.fetch.outputs.rehearsal == 'true' && 'master' || needs.fetch.outputs.head_sha }}
 
       - name: Overlay the rehearsal tree
         if: needs.fetch.outputs.rehearsal == 'true'
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: rehearsal-tree
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
@@ -433,12 +433,12 @@ jobs:
       # which exposes no outputs.
       pypi_published: ${{ steps.pypi_done.outputs.published }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.fetch.outputs.head_sha }}
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
