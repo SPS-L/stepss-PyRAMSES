@@ -1,6 +1,6 @@
 # CI baselines
 
-`nordic_baseline.npz` — the Nordic voltage-collapse trajectory, all 1417
+`nordic_baseline.npz`: the Nordic voltage-collapse trajectory, all 1417
 columns interpolated onto a 0 : 0.2 : 150 s grid, plus the final simulated
 time (163.14 s, the `sim_minmaxvolt` trip instant). Consumed by
 `tests/test_nordic.py` via `tools/compare_trj.py compare`.
@@ -12,7 +12,7 @@ step.
 
 ## Refresh policy
 
-Regenerate ONLY when a change legitimately alters trajectories — a model or
+Regenerate ONLY when a change legitimately alters trajectories, a model or
 solver change in RAMSES. In exactly that situation the gate is *supposed* to
 fail against the old baseline, and the fix is a deliberate baseline update in
 a reviewed pull request, never an automatic pass.
@@ -25,15 +25,15 @@ designed.
     python -m venv /tmp/rebase && /tmp/rebase/bin/pip install ./src
     D=$(mktemp -d); cp tests/data/nordic/* "$D/"
     ( cd "$D" && /tmp/rebase/bin/python - <<'EOF'
-    import pyramses
-    from pyramses.globals import RAMSESError
-    case = pyramses.cfg()
+    import stepss
+    from stepss.globals import RAMSESError
+    case = stepss.cfg()
     for f in ('dyn_A.dat', 'volt_rat_A.dat', 'settings1.dat'):
         case.addData(f)
     case.addObs('obs.dat'); case.addDst('short_trip_branch.dst')
     case.addTrj('obs.trj'); case.addOut('output.trace')
     case.addInit('init.trace'); case.addCont('cont.trace'); case.addDisc('disc.trace')
-    ram = pyramses.sim()
+    ram = stepss.sim()
     try:
         ram.execSim(case)
     except RAMSESError as exc:

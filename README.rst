@@ -1,25 +1,25 @@
 |PyPI version| |PyPI status| |Docs status|
 
-.. |PyPI version| image:: https://img.shields.io/pypi/v/pyramses
-   :target: https://pypi.org/project/pyramses/
+.. |PyPI version| image:: https://img.shields.io/pypi/v/stepss
+   :target: https://pypi.org/project/stepss/
    :alt: PyPI version
 
-.. |PyPI status| image:: https://img.shields.io/pypi/status/pyramses
-   :target: https://pypi.org/project/pyramses/
+.. |PyPI status| image:: https://img.shields.io/pypi/status/stepss
+   :target: https://pypi.org/project/stepss/
    :alt: PyPI status
 
 .. |Docs status| image:: https://img.shields.io/github/actions/workflow/status/SPS-L/stepss-docs/deploy.yml?branch=main&label=docs
    :target: https://github.com/SPS-L/stepss-docs/
    :alt: Docs deploy status
 
-PyRAMSES: Python Interface to RAMSES
-=====================================
+STEPSS: Python Interface to RAMSES and Helios
+=============================================
 
 Scripted power system dynamic simulation and AC power-flow analysis from Python.
 
-PyRAMSES is a Python interface to the `RAMSES <https://stepss.sps-lab.org/getting-started/overview/>`_ dynamic simulator - part of the `STEPSS <https://stepss.sps-lab.org/>`_ power system simulation platform. It covers the full simulation workflow: defining test cases, launching simulations, querying system state at runtime, and extracting and plotting results.
+stepss is a Python interface to the `RAMSES <https://stepss.sps-lab.org/getting-started/overview/>`_ dynamic simulator - part of the `STEPSS <https://stepss.sps-lab.org/>`_ power system simulation platform. It covers the full simulation workflow: defining test cases, launching simulations, querying system state at runtime, and extracting and plotting results.
 
-PyRAMSES enables scripted power system dynamic simulations from Python or Jupyter notebooks. It exposes the full capability of the RAMSES solver through a clean Python API, with pre-compiled binaries bundled - no separate solver installation required. The package also bundles the `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_ AC power-flow engine (see `Helios Power-Flow Interface`_ below).
+stepss enables scripted power system dynamic simulations from Python or Jupyter notebooks. It exposes the full capability of the RAMSES solver through a clean Python API, with pre-compiled binaries bundled - no separate solver installation required. The package also bundles the `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_ AC power-flow engine (see `Helios Power-Flow Interface`_ below).
 
 RAMSES (RApid Multithreaded Simulation of Electric power Systems) simulates the dynamic evolution of power systems under the phasor approximation, using Backward Euler, Trapezoidal, or BDF2 integration with OpenMP parallelism.
 
@@ -32,28 +32,35 @@ Key Features
 - **Parameter sweeps** - script multiple simulations with varying parameters or disturbances
 - **Eigenanalysis support** - export system Jacobian matrices for small-signal stability analysis
 - **Bundled binaries** - pre-compiled RAMSES shared libraries (``ramses.dll`` / ``ramses.so``) for Windows, Linux, and macOS, plus Helios power-flow libraries for Windows, Linux, and macOS
-- **AC power flow** - the ``pyramses.helios`` module runs Helios power flows: solve, modify with redispatch, N-1 contingency screening, and file exports
+- **AC power flow** - the ``stepss.helios`` module runs Helios power flows: solve, modify with redispatch, N-1 contingency screening, and file exports
 - **Scientific Python integration** - works natively with NumPy, SciPy, Matplotlib, and Jupyter
 
 Installation
 ------------
 
-Install PyRAMSES and all recommended dependencies via pip::
+Install stepss and all recommended dependencies via pip::
 
-   pip install jupyter ipython pyramses
+   pip install jupyter ipython stepss
 
 Required dependencies (matplotlib, scipy, and numpy) are installed automatically.
 
 Minimal installation (no plotting or notebook support)::
 
-   pip install pyramses
+   pip install stepss
 
-**Optional:** Install `Gnuplot <http://www.gnuplot.info/>`_ to enable real-time observable plots during simulation. PyRAMSES will still work without it, but runtime plots will be disabled.
+**Optional:** Install `Gnuplot <http://www.gnuplot.info/>`_ to enable real-time observable plots during simulation. stepss will still work without it, but runtime plots will be disabled.
+
+Renamed from PyRAMSES
+~~~~~~~~~~~~~~~~~~~~~
+
+This package was published as ``pyramses`` up to version 3.58. Existing code
+keeps working: ``pip install pyramses`` now installs a shim that forwards to
+this package. New code should use ``import stepss``.
 
 Linux System Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On Linux, the following system libraries must be installed before running PyRAMSES::
+On Linux, the following system libraries must be installed before running stepss::
 
    sudo apt install libopenblas0 libgfortran5 libgomp1
 
@@ -63,12 +70,12 @@ These packages provide:
 - **libgfortran5** - GNU Fortran runtime required by the Fortran components of RAMSES
 - **libgomp1** - OpenMP runtime for multi-core parallel execution
 
-On most desktop Linux distributions these are already present. If ``pyramses`` fails to import with a shared-library error, install the packages above and retry.
+On most desktop Linux distributions these are already present. If ``stepss`` fails to import with a shared-library error, install the packages above and retry.
 
 macOS System Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On macOS, the following system libraries must be installed before running PyRAMSES::
+On macOS, the following system libraries must be installed before running stepss::
 
    brew install openblas gcc
 
@@ -77,7 +84,7 @@ These packages provide:
 - **openblas** - OpenBLAS BLAS/LAPACK routines used by the solver
 - **gcc** - GNU Fortran (``libgfortran``) and OpenMP (``libgomp``) runtimes required by the Fortran components of RAMSES
 
-macOS is supported on Apple Silicon (arm64) only: both the bundled RAMSES and Helios binaries are arm64. If ``pyramses`` fails to import with a shared-library error, install the packages above and retry.
+macOS is supported on Apple Silicon (arm64) only: both the bundled RAMSES and Helios binaries are arm64. If ``stepss`` fails to import with a shared-library error, install the packages above and retry.
 
 Platform Support
 ~~~~~~~~~~~~~~~~
@@ -106,10 +113,10 @@ Quick Start
 
 .. code-block:: python
 
-   import pyramses
+   import stepss
 
    # 1. Define the test case
-   case = pyramses.cfg()
+   case = stepss.cfg()
    case.addData('dyn.dat')        # dynamic model data
    case.addData('volt_rat.dat')   # power-flow initialisation
    case.addData('settings.dat')   # solver settings
@@ -118,11 +125,11 @@ Quick Start
    case.addTrj('output.trj')      # trajectory output file
 
    # 2. Run simulation
-   ram = pyramses.sim()
+   ram = stepss.sim()
    ram.execSim(case)              # run to completion
 
    # 3. Extract and plot results
-   ext = pyramses.extractor(case.getTrj())
+   ext = stepss.extractor(case.getTrj())
    ext.getBus('1041').mag.plot()  # bus voltage magnitude
    ext.getSync('g1').S.plot()     # generator rotor speed
 
@@ -130,7 +137,7 @@ For interactive usage, pause/continue and on-the-fly disturbance injection is su
 
 .. code-block:: python
 
-   ram = pyramses.sim()
+   ram = stepss.sim()
    ram.execSim(case, 0.0)                        # initialise, paused at t=0
    ram.addDisturb(10.0, 'BREAKER SYNC_MACH g7 0')  # schedule generator trip
    ram.contSim(ram.getInfTime())                 # run to end of time horizon
@@ -139,11 +146,11 @@ For interactive usage, pause/continue and on-the-fly disturbance injection is su
 Helios Power-Flow Interface
 ---------------------------
 
-PyRAMSES also bundles `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_, the STEPSS AC power-flow engine (successor of the Fortran PFC), exposed through the ``pyramses.helios`` module. Unlike the RAMSES classes, this interface uses PEP 8 snake_case naming. Pre-compiled libraries are bundled for Linux, Windows, and macOS.
+stepss also bundles `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_, the STEPSS AC power-flow engine (successor of the Fortran PFC), exposed through the ``stepss.helios`` module. Unlike the RAMSES classes, this interface uses PEP 8 snake_case naming. Pre-compiled libraries are bundled for Linux, Windows, and macOS.
 
 .. code-block:: python
 
-   from pyramses.helios import HeliosSession
+   from stepss.helios import HeliosSession
 
    with HeliosSession() as pf:
        pf.load_file('network.dat')
@@ -175,28 +182,28 @@ Main Classes
 
    * - Class
      - Description
-   * - ``pyramses.cfg``
+   * - ``stepss.cfg``
      - Defines a test case: data files, disturbance file, output files, observables, and runtime options.
-   * - ``pyramses.sim``
+   * - ``stepss.sim``
      - Runs simulations. Supports start/pause/continue, runtime queries, and on-the-fly disturbance injection.
-   * - ``pyramses.extractor``
+   * - ``stepss.extractor``
      - Extracts and visualises time-series results from trajectory (``.trj``) files produced by a simulation.
-   * - ``pyramses.helios.HeliosSession``
+   * - ``stepss.helios.HeliosSession``
      - Runs AC power flows with the Helios engine: load, modify, solve, contingency screening, and file exports.
 
 Bundled Binaries Are CI-Managed
 -------------------------------
 
-The native libraries under ``src/pyramses/libs/`` and the version record in
-``src/pyramses/_bundled.py`` are written by automation, not by hand. When
+The native libraries under ``src/stepss/libs/`` and the version record in
+``src/stepss/_bundled.py`` are written by automation, not by hand. When
 RAMSES or Helios publishes a release, a workflow refreshes the affected
-libraries, bumps the patch version, and publishes a new PyRAMSES release only
-after the full test suite — including the Nordic voltage-collapse regression —
+libraries, bumps the patch version, and publishes a new stepss release only
+after the full test suite (including the Nordic voltage-collapse regression)
 passes on Linux, Windows and macOS.
 
 Check what a given release bundles with::
 
-   python -c "import pyramses; print(pyramses.__ramses_version__, pyramses.__helios_version__)"
+   python -c "import stepss; print(stepss.__ramses_version__, stepss.__helios_version__)"
 
 Contributors should not edit those paths directly; a manual change is
 overwritten by the next sync.
@@ -214,17 +221,17 @@ Full documentation is available at `https://stepss.sps-lab.org/pyramses/ <https:
 
 Support:
 
-- Issues: `https://github.com/SPS-L/stepss-pyramses/issues <https://github.com/SPS-L/stepss-pyramses/issues>`_
+- Issues: `https://github.com/SPS-L/stepss-python-ui/issues <https://github.com/SPS-L/stepss-python-ui/issues>`_
 - Project page: `https://sps-lab.org/project/pyramses/ <https://sps-lab.org/project/pyramses/>`_
 
 License
 -------
 
-PyRAMSES (the Python wrapper) is distributed under the **Apache License 2.0** - see ``LICENSE.rst``. Copyright © Petros Aristidou.
+stepss (the Python wrapper) is distributed under the **Apache License 2.0** - see ``LICENSE.rst``. Copyright © Petros Aristidou.
 
 The RAMSES solver (the dynamic library bundled in this package) is proprietary software owned by the University of Liège and is distributed under the Academic Public License for the use of STEPSS: free for non-commercial use (teaching, academic research, personal purposes), with a limit of 1000 buses and 2 CPU cores. For commercial use or larger models, contact the authors. See the `STEPSS License page <https://stepss.sps-lab.org/getting-started/license/>`_ for full terms.
 
-The STEPSS-Helios power-flow library (``libhelios_api``, also bundled in this package and used by ``pyramses.helios``) is the property of Dr. Petros Aristidou, distributed under the STEPSS-Helios Academic Public License: free for non-commercial use; commercial use requires a license (info@sps-lab.org). See the ``NOTICE`` file for details.
+The STEPSS-Helios power-flow library (``libhelios_api``, also bundled in this package and used by ``stepss.helios``) is the property of Dr. Petros Aristidou, distributed under the STEPSS-Helios Academic Public License: free for non-commercial use; commercial use requires a license (info@sps-lab.org). See the ``NOTICE`` file for details.
 
 Authors
 -------

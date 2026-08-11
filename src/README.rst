@@ -1,5 +1,5 @@
-PyRAMSES (Packaging Compatibility README)
-=========================================
+STEPSS (Packaging Compatibility README)
+=======================================
 
 The canonical project README is maintained at:
 
@@ -10,4 +10,4 @@ Packaging now reads from ../README.rst first (see setup.py), with this file kept
 Project homepage and full docs:
 
 - https://stepss.sps-lab.org/pyramses/
-- https://github.com/SPS-L/stepss-pyramses
+- https://github.com/SPS-L/stepss-python-ui

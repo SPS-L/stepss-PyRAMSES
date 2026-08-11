@@ -4,21 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-PyRAMSES is the Python interface to RAMSES, the time-domain dynamic simulator
-in the STEPSS platform, plus `pyramses.helios`, a wrapper over the Helios AC
+stepss is the Python interface to RAMSES, the time-domain dynamic simulator
+in the STEPSS platform, plus `stepss.helios`, a wrapper over the Helios AC
 power-flow engine. It builds neither native component: it **bundles** shared
 libraries built by `stepss-ramses` and `stepss-helios` (both private) and
 ships them inside a single fat `py3-none-any` wheel on PyPI.
 
 Package source lives under `src/`; `src/setup.py` parses `__version__` out of
-`src/pyramses/__init__.py` by regex rather than importing it, so that
+`src/stepss/__init__.py` by regex rather than importing it, so that
 assignment must stay a plain `__version__ = 'x.y.z'` at the start of a line.
 
-## CI-managed paths — do not hand-edit
+## CI-managed paths: do not hand-edit
 
-- `src/pyramses/libs/{lin,win,mac}/` — the bundled binaries
-- `src/pyramses/_bundled.py` — records which upstream versions are bundled
-- `src/pyramses/__init__.py`'s `__version__` — bumped by the automation
+- `src/stepss/libs/{lin,win,mac}/`: the bundled binaries
+- `src/stepss/_bundled.py`: records which upstream versions are bundled
+- `src/stepss/__init__.py`'s `__version__`: bumped by the automation
 
 These are written by `.github/workflows/sync-upstream-release.yml`. A manual
 edit is silently overwritten by the next sync, and editing `_bundled.py` by
@@ -78,7 +78,7 @@ Things that are easy to get wrong here:
   every recoverable step happens first. If the upload alone fails, the tested
   wheel is already attached to the GitHub release and
   `python-publish.yml` (break-glass, `workflow_dispatch` with a tag input)
-  uploads that file. It does **not** rebuild — rebuilding would ship bytes no
+  uploads that file. It does **not** rebuild: rebuilding would ship bytes no
   gate ever saw.
 - **`workflow_dispatch` rehearses unless `publish` is ticked.** Left off, it
   runs fetch → build → gate and stops, reaching neither `master` nor PyPI, which
@@ -86,16 +86,16 @@ Things that are easy to get wrong here:
   `needs.fetch.outputs.rehearsal == 'false'` alone, so ticking `publish` is what
   makes a hand-triggered run real. Do not "simplify" that guard: the quoting on
   the `'true'` / `'false'` string comparisons is load-bearing, since an
-  unquoted comparison coerces an empty input and would fail *open* — an
+  unquoted comparison coerces an empty input and would fail *open*; an
   unset `publish` must land on rehearsal.
 - **A duplicate dispatch is skipped**, by comparing the incoming tag against
   `_bundled.py`. `client_payload[force]=true` bypasses that one guard and
-  nothing else — for the case where a bundle was refreshed outside the
+  nothing else, for the case where a bundle was refreshed outside the
   automation and never published. It is a deliberate human action; an upstream
   must never set it, or every re-run of its release workflow spends a PyPI
   version.
 - **A superseded sync is silent.** GitHub keeps one pending run per concurrency
-  group, and a run cancelled while queued executes *zero* jobs — so nothing
+  group, and a run cancelled while queued executes *zero* jobs, so nothing
   inside the workflow can report it. `bundled-drift-check.yml` is the backstop:
   it compares bundled versions against each upstream's latest, and `master`'s
   version against PyPI, and files an issue on divergence.
@@ -115,12 +115,12 @@ against `tests/baselines/nordic_baseline.npz` via `tools/compare_trj.py`.
   library and the standalone executable reach the same trajectory bit-exactly
   on all three platforms, so one baseline serves both repos. Keep them in step;
   see `tests/baselines/README.md` before regenerating, and expect the gate to
-  fail on a legitimate solver change — that is a reviewed baseline update, not
+  fail on a legitimate solver change: that is a reviewed baseline update, not
   an automatic pass.
 - **The collapse trip is by design.** `execSim()` raises `RAMSESError` with flag
   `-1` and a message naming `sim_minmaxvolt`; a run that completes cleanly is
-  the regression. `RAMSESError` is not exported at package level — import it
-  from `pyramses.globals`.
+  the regression. `RAMSESError` is not exported at package level: import it
+  from `stepss.globals`.
 - **Do not call `endSim()` after the trip.** It raises a second, unrelated
   `RAMSESError` ("Load records") that masks the real result. `obs.trj` is
   already complete without it.
@@ -139,7 +139,7 @@ bash tools/test_update_ramses_libs.sh
 runtimes. A machine without them fails at library load, not at import:
 
 - Linux: `libopenblas0 libgfortran5 libgomp1`
-- macOS: `brew install openblas gcc` — and RAMSES on macOS is **arm64 only**
+- macOS: `brew install openblas gcc`, and RAMSES on macOS is **arm64 only**
 - Windows: nothing; that build is statically linked and self-contained
 
 Every CI job that loads the library installs these. Windows needs no step, and
@@ -148,8 +148,11 @@ why the Helios tests passed for a long time before any test exercised RAMSES.
 
 ## Conventions
 
-- Never chain git commands with `&&`, `||` or `;` — run each separately.
+- Never chain git commands with `&&`, `||` or `;`. Run each separately.
 - Never use `gh api -F`; always `-f`. `-F` reads a value from a local file when
   it starts with `@`, and git permits a tag named `@evil`.
-- The RAMSES API is camelCase (`addData`, `execSim`); `pyramses.helios` is
+- The RAMSES API is camelCase (`addData`, `execSim`); `stepss.helios` is
   deliberately PEP 8 snake_case.
+- The `pyramses` distribution is a frozen forwarding shim in `compat/pyramses/`,
+  published once by `publish-compat-shim.yml`. Do not release it again, and do
+  not rename that workflow file: the PyPI trusted publisher binds to it.
