@@ -15,7 +15,7 @@
 - **First release version is `3.58.1`.** RAMSES v3.58 was published on 2026-08-11 while this plan was being written, and the sync automation released `pyramses 3.58` (bundling RAMSES v3.58 and Helios v1.4.1) before the rename began. Tag `v3.58` therefore already exists, so the bare version on the 3.58 base is taken and the next counter is `.1`. Verified by running `bash tools/bump_version.sh manual`, which prints `3.58.1`. **If another upstream release lands before the first `stepss` release, re-derive this number the same way rather than trusting this line.**
 - **The last real `pyramses` release is `3.58`**, not 0.3.5. The shim's own version must exceed it or unpinned users never upgrade into the bridge.
 - **The shim pins `stepss>=3.58.1`** and is itself versioned `3.58.1`.
-- **Never rename `pyramses-libs-*.zip`.** These are release-asset names produced by `stepss-ramses/.github/workflows/release.yml` (lines 67, 159, 231). They appear in `tools/update_ramses_libs.sh` at lines 28, 34, 35. Renaming them breaks the binary fetch.
+- **Never rename `pyramses-libs-*.zip`.** These are release-asset names produced by `stepss-ramses/.github/workflows/release.yml` (lines 67, 159, 231). Renaming them breaks the binary fetch. They appear in **two** files, and both must be protected: `tools/update_ramses_libs.sh` (lines 28, 34, 35) and `tools/test_update_ramses_libs.sh`, whose fixtures fabricate zips under those exact names to feed a fake `gh`. Renaming only the first leaves the test asserting against names the script no longer requests, which fails loudly; renaming only the second would let the test pass while the real fetch was broken, which does not.
 - **Never rename the `PYRAMSES_DISPATCH_TOKEN` secret.** It lives in `stepss-ramses` and `stepss-helios`. It is an identifier, not user-facing; renaming it means coordinated secret rotation across two private repos for zero benefit.
 - **Never rewrite historical documents.** `docs/superpowers/plans/2026-08-06-*`, `docs/superpowers/specs/2026-08-06-*` and `stepss-docs/public/changelog.txt` describe what was true at the time. They keep the old name.
 - **Do not touch `tests/baselines/nordic_baseline.npz`.** It is shared byte-for-byte with `stepss-ramses`.
@@ -330,7 +330,7 @@ sed -i 's/@@ASSET@@/pyramses-libs/g' tools/update_ramses_libs.sh
 grep -n 'pyramses' tools/*.sh
 ```
 
-Expected: only lines 28, 34, 35, 41 and 49 of `tools/update_ramses_libs.sh`, each containing `pyramses-libs`. Line 41's comment now reads "macOS keeps the .so name: stepss separates platforms by directory", which is correct. If any other line still says `pyramses`, fix it by hand.
+Expected: only the `pyramses-libs` asset names, in **both** files: lines 28, 34, 35 of `tools/update_ramses_libs.sh` and lines 20, 22, 24, 71 of `tools/test_update_ramses_libs.sh`. Nothing else. Lines 41 and 49 of `update_ramses_libs.sh` carry the bare word `pyramses` in a comment and an echo, and those are supposed to have become `stepss`. If any line outside that set still says `pyramses`, fix it by hand.
 
 - [ ] **Step 3: Confirm no placeholder leaked**
 
