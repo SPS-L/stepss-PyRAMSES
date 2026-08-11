@@ -1213,6 +1213,11 @@ keeps working: `pip install pyramses` installs a shim that forwards to
 
 In the "One owner per topic" table, the last row's owner changes from "the matching `pyramses/` page" to "the matching `python/` page". Add to the redirects note that the `/pyramses/*` URLs are kept alive for the same reason `/user-guide/pfc` is.
 
+Two more edits in the same file:
+
+- The "Helios is the power flow; PFC is history" section says "PyRAMSES bundles ramses plus helios". That becomes "the `stepss` package bundles ramses plus helios". Task 8 could not make this edit: it works only in the umbrella, and this is a component repo.
+- Anywhere the file names the package repository, it should say `stepss-python-ui`.
+
 - [ ] **Step 7: Verify house style**
 
 ```bash
