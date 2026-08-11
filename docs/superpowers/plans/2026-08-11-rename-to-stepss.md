@@ -1256,6 +1256,25 @@ git commit -m "Move the Python API docs to /python/ for the stepss rename"
 
 Run these in order, after Tasks 1-9 are merged to their default branches.
 
+### The docs site must be live before the release, not after
+
+An earlier draft of this runbook deployed the documentation last. That ordering is wrong and the mistake is worth stating plainly, because it is invisible until it is permanent.
+
+`README.rst` becomes the PyPI **long description**, and **PyPI freezes the long description into the release**. It cannot be edited afterwards; correcting it costs another version number, and version numbers can never be reclaimed. That README now links to `/python/*` pages which exist only on an unpushed branch. Releasing first would permanently attach a project page full of dead links to `3.58.1`.
+
+So the documentation deploy is a **precondition of the release**, not a follow-up.
+
+- [ ] **R0** Merge and deploy `stepss-docs` first. Merge its `rename-to-stepss` branch to `main`, let the Pages workflow deploy, then confirm the new URLs actually serve before going near PyPI:
+
+```sh
+for p in overview installation examples api-reference helios; do
+  curl -s -o /dev/null -w "$p: %{http_code}\n" "https://stepss.sps-lab.org/python/$p/"
+done
+curl -s -o /dev/null -w "redirect: %{http_code}\n" "https://stepss.sps-lab.org/pyramses/overview"
+```
+
+Expected: `200` for all five, and a redirect (301/302, or 200 after following) for the old path. Only then continue.
+
 - [ ] **R1** Rehearse: Actions, `sync-upstream-release.yml`, Run workflow from `master`, source `manual`, **`publish` unticked**. This runs fetch, build and the three-platform gate, then stops, reaching neither `master` nor PyPI. Expected: green, with no release created and no PyPI upload.
 
 - [ ] **R2** Confirm the rehearsal's build gate asserted the renamed wheel paths. In the run log, the wheel-content step must list six `stepss/libs/...` entries.

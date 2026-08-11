@@ -282,16 +282,23 @@ The sequence is forced by the OIDC and PyPI couplings.
    OIDC. Full test suite green locally.
 5. Update the two upstream dispatch targets in `stepss-ramses` and
    `stepss-helios`.
-6. **Rehearse**: `workflow_dispatch` with `publish` unticked. Per the existing
+6. **Documentation site, merged and deployed.** This ordering is load-bearing
+   and an earlier draft of this spec had it wrong, placing the docs last.
+   `README.rst` becomes the PyPI **long description**, and PyPI freezes that
+   text into the release: it cannot be edited afterwards, and correcting it
+   costs another version number that can never be reclaimed. The README links
+   to `/python/*` pages that do not exist until this deploy lands. Releasing
+   first would permanently attach a project page of dead links to `3.58.1`.
+   Verify the five URLs serve `200` before continuing.
+7. **Rehearse**: `workflow_dispatch` with `publish` unticked. Per the existing
    design this runs fetch, build and the three-platform gate, then stops,
    reaching neither `master` nor PyPI. This proves the renamed pipeline without
    spending a version.
-7. Real release: `workflow_dispatch` with `publish` ticked. Creates the
+8. Real release: `workflow_dispatch` with `publish` ticked. Creates the
    `stepss` project on PyPI and converts the pending publisher.
-8. Publish the shim once via `publish-compat-shim.yml`, pinned to `>=` the
-   version from step 7.
-9. Delete and revoke `PYPI_API_TOKEN`.
-10. Documentation site.
+9. Publish the shim once via `publish-compat-shim.yml`, pinned to `>=` the
+   version from step 8.
+10. Delete and revoke `PYPI_API_TOKEN`.
 11. Follow-up sweep (out of scope here).
 
 Step 6 is not optional. It is the only thing that exercises the renamed paths
