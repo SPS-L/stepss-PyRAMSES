@@ -2,8 +2,8 @@
 
 import pytest
 
-from pyramses.globals import HeliosError
-from pyramses.helios import HeliosSession
+from stepss.globals import HeliosError
+from stepss.helios import HeliosSession
 from conftest import LIB_DIR
 
 

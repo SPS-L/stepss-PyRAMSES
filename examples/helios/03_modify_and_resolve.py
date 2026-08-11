@@ -8,7 +8,7 @@ a re-solve — the same workflow as the interactive modify menu.
 
 from pathlib import Path
 
-from pyramses.helios import HeliosSession
+from stepss.helios import HeliosSession
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data" / "6bus_mg.dat"
 

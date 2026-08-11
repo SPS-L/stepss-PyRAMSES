@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Post-simulation results extraction for pyramses.
+"""Post-simulation results extraction for stepss.
 
 Provides:
 
@@ -70,15 +70,15 @@ class extractor(object):
     two-ports, and DCTLs).
 
     :param str traj: path to the RAMSES trajectory file produced during the
-                     simulation (as set with :meth:`~pyramses.cfg.addTrj`).
+                     simulation (as set with :meth:`~stepss.cfg.addTrj`).
 
     :Example:
 
-    >>> import pyramses
-    >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-    >>> ram = pyramses.sim()
+    >>> import stepss
+    >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+    >>> ram = stepss.sim()
     >>> ram.execSim(case) # run the simulation
-    >>> ext = pyramses.extractor(case.getTrj())
+    >>> ext = stepss.extractor(case.getTrj())
     >>> ext.getBus('1041').mag.plot() # plot the voltage magnitude timeseries for bus '1041'
     """
     
@@ -101,7 +101,7 @@ class extractor(object):
         :raises FileNotFoundError: if the file does not exist.
         """
         if not isinstance(traj, str):
-            raise TypeError('pyramses: extractor expects a string path to the trajectory file.')
+            raise TypeError('stepss: extractor expects a string path to the trajectory file.')
         
         self._trajfilename = traj
         
@@ -249,11 +249,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getBus('1041').mag.plot() # will plot the timeseries simulated for the voltage magnitude on bus '1041' 
         
         .. note:: Available data are
@@ -295,11 +295,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getShunt('sh1').Q.plot() # will plot the timeseries simulated for the reactive power of shunt 'sh1' 
         
         .. note:: Available data are
@@ -340,11 +340,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getLoad('L_1').P.plot() # will plot the timeseries simulated for the active power of 'L_1' 
         
         .. note:: Available data are
@@ -385,11 +385,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getBranch('1041-4041').PF.plot() # will plot the timeseries simulated for the active power of line'1041-4041' 
         
         .. note::
@@ -441,11 +441,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getSync('g1').P.plot() # will plot the timeseries simulated for the active power of 'g1' 
         
         .. note::
@@ -528,11 +528,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getExc('g1').vf.plot() # will plot the timeseries simulated for the field voltage of 'g1' 
         """
         try:
@@ -572,11 +572,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getTor('g1').Tm.plot() # will plot the timeseries simulated for the torque of 'g1'
         """
         try:
@@ -616,11 +616,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getInj('pv1').P.plot() # will plot the timeseries simulated for the active power of 'pv1' 
         """
         try:
@@ -662,11 +662,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getTwop('lcc1').P1.plot() # will plot the timeseries simulated for the power of 'lcc1' 
         """
         try:
@@ -709,11 +709,11 @@ class extractor(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case = pyramses.cfg("case.rcfg") # load case from a configuration file
-        >>> ram = pyramses.sim()
+        >>> import stepss
+        >>> case = stepss.cfg("case.rcfg") # load case from a configuration file
+        >>> ram = stepss.sim()
         >>> ram.execSim(case) # run the simulation
-        >>> ext = pyramses.extractor(case.getTrj())
+        >>> ext = stepss.extractor(case.getTrj())
         >>> ext.getDctl('agc').g5.plot() # will plot the timeseries simulated for the power of 'g5' 
         """
         try:

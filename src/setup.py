@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Package build script for pyramses.
+"""Package build script for stepss.
 
-Reads version metadata from the installed :mod:`pyramses` package and uses
+Reads version metadata from the installed :mod:`stepss` package and uses
 :func:`setuptools.setup` to define the distribution.  Run via
 ``python setup.py install`` (legacy) or, preferably, with ``pip install .``.
 """
@@ -27,7 +27,7 @@ def read_first_existing(*paths):
 # in pip's isolated build environment, where the package's runtime
 # dependencies (numpy, scipy, ...) are not installed.
 def read_metadata():
-    init_path = os.path.join(os.path.dirname(__file__), 'pyramses', '__init__.py')
+    init_path = os.path.join(os.path.dirname(__file__), 'stepss', '__init__.py')
     with open(init_path, encoding='utf-8') as f:
         content = f.read()
     def grab(name):
@@ -54,11 +54,11 @@ __name__ = _meta['package_name']
 setup(
     name=__name__,
     version=__version__,
-    description='Python library for RAMSES dynamic simulator of STEPSS package.',
+    description='Python interface to the STEPSS power-system simulation platform.',
     author=__author__,
     author_email=__email__,
     url=__url__,
-    keywords=['RAMSES', 'Power Systems', 'Simulator','STEPSS'],
+    keywords=['STEPSS', 'RAMSES', 'Helios', 'Power Systems', 'Simulator'],
     license='Apache-2.0',
     # Prefer the repository-level README as the single source of truth.
     # Keep a local fallback for legacy build contexts that only copy ./src.
@@ -70,10 +70,10 @@ setup(
         # Headers are platform-independent and live at the libs/ root; the
         # shared libraries are split per platform because the Linux and macOS
         # RAMSES builds share the filename ramses.so.
-        'pyramses': ['libs/*.h',
-                     'libs/win/*.dll',
-                     'libs/lin/*.so',
-                     'libs/mac/*.so', 'libs/mac/*.dylib'],
+        'stepss': ['libs/*.h',
+                   'libs/win/*.dll',
+                   'libs/lin/*.so',
+                   'libs/mac/*.so', 'libs/mac/*.dylib'],
     },
     classifiers=[
         "Development Status :: " + __status__,
@@ -84,7 +84,7 @@ setup(
     ],
     entry_points={
         'console_scripts' : [
-            'ramses = pyramses.scripts.exec:run',
+            'ramses = stepss.scripts.exec:run',
         ]
     }
 

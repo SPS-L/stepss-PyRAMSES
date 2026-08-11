@@ -50,7 +50,7 @@ class sim(object):
         On Windows the library is ``ramses.dll``; on all other platforms
         (Linux and macOS) it is ``ramses.so``.  By default the library bundled
         with the package for the current platform is used
-        (``src/pyramses/libs/win/``, ``libs/lin/`` or ``libs/mac/``).  A custom
+        (``src/stepss/libs/win/``, ``libs/lin/`` or ``libs/mac/``).  A custom
         directory can be supplied via *custLibDir* to override that library —
         useful for testing pre-release solver builds; the directory must
         contain the library file directly (no platform subfolder).
@@ -76,7 +76,7 @@ class sim(object):
             try:
                 if os.path.exists(custLibDir) and os.path.isdir(custLibDir):
                     ramLibDir = custLibDir
-                    warnings.warn("Overwriting the internal DLL with the one at %s. The DLL in that location will be locked. To unlock it, you need to del() this instance of pyramses.sim() or restart the kernel." % ramLibDir)
+                    warnings.warn("Overwriting the internal DLL with the one at %s. The DLL in that location will be locked. To unlock it, you need to del() this instance of stepss.sim() or restart the kernel." % ramLibDir)
                 else:
                     raise RAMSESError('RAMSES: The path %s does not exist or it is not a directory.' % (custLibDir))
             except OSError as e:
@@ -197,9 +197,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0) # start simulation paused
         >>> ram.getLastErr()
         'This is an error msg'
@@ -236,9 +236,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0) # start simulation paused
         >>> ram.getJac()
 
@@ -298,9 +298,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0) # start simulation paused
         >>> ram.getCompName("BUS",1)
         'B1'
@@ -342,9 +342,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0) # start simulation paused
         >>> ram.getAllCompNames("BUS")
         ['B1',
@@ -378,20 +378,20 @@ class sim(object):
     def execSim(self, cmd, pause=None):
         """Execute a RAMSES simulation.
 
-        Serialises *cmd* to a RAMSES command file (via :meth:`~pyramses.cfg.writeCmdFile`),
+        Serialises *cmd* to a RAMSES command file (via :meth:`~stepss.cfg.writeCmdFile`),
         then calls the RAMSES solver.  If *pause* is supplied, the simulation is
         scheduled to stop at that simulated time and can be resumed later with
         :meth:`contSim`.  Pass ``pause=0.0`` to initialise only (power-flow
         solution) without running the dynamic simulation.
 
         :param cmd: case configuration describing all input and output files.
-        :type cmd: :class:`pyramses.cfg`
+        :type cmd: :class:`stepss.cfg`
         :param pause: simulated time (seconds) at which to pause, or ``None``
                       to run until the end of the disturbance scenario.
         :type pause: float or None
         :returns: ``0`` on success.
         :rtype: int
-        :raises TypeError: if *cmd* is not a :class:`pyramses.cfg` instance.
+        :raises TypeError: if *cmd* is not a :class:`stepss.cfg` instance.
         :raises RAMSESError: if the solver returns a non-zero, non-112 flag.
 
         .. note:: Return code ``112`` means the simulation paused normally; it
@@ -399,17 +399,17 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case)               # run to end
         >>> ram.execSim(case, pause=0.0)    # initialise only, then pause
 
         .. note:: If you have an existing command file, you can load it with
-                  ``pyramses.cfg("cmd.txt")`` before passing it here.
+                  ``stepss.cfg("cmd.txt")`` before passing it here.
         """
         if not isinstance(cmd, cfg):
-            raise TypeError('RAMSES: Function execSim failed because the command file is not of type pyramses.cfg()')
+            raise TypeError('RAMSES: Function execSim failed because the command file is not of type stepss.cfg()')
         if pause is not None:
             self.pauseSim(pause)
         cmdfilename = cmd.writeCmdFile()
@@ -438,9 +438,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0.0)        # initialise and pause at t=0
         >>> ram.contSim(ram.getInfTime()) # run to end of scenario
         """
@@ -461,9 +461,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 10.0) # simulate until 10 seconds and pause
         >>> buses = ['g1','g2','g3']
         >>> ram.getBusVolt(buses)
@@ -491,9 +491,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 10.0) # simulate until 10 seconds and pause
         >>> branchName = ['1011-1013','1012-1014','1021-1022']
         >>> ram.getBranchPow(branchName)
@@ -522,9 +522,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 10.0) # simulate until 10 seconds and pause
         >>> branchName = ['1011-1013','1012-1014','1021-1022']
         >>> ram.getBranchCur(branchName)
@@ -554,9 +554,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 10.0) # simulate until 10 seconds and pause
         >>> buses = ['g1','g2','g3']
         >>> ram.getBusPha(buses)
@@ -634,9 +634,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt") # command file without any observables
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt") # command file without any observables
         >>> ram.execSim(case, 0.0) # start
         >>> traj_filenm = 'obs.trj'
         >>> ram.initObserv(traj_filenm)
@@ -656,9 +656,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt") # command file without any observables
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt") # command file without any observables
         >>> ram.execSim(case, 0.0) # start
         >>> traj_filenm = 'obs.trj'
         >>> ram.initObserv(traj_filenm)
@@ -679,9 +679,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt") # command file without any observables
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt") # command file without any observables
         >>> ram.execSim(case, 0.0) # start
         >>> traj_filenm = 'obs.trj'
         >>> ram.initObserv(traj_filenm)
@@ -707,9 +707,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 10.0) # simulate until 10 seconds and pause
         >>> comp_type = ['EXC','EXC','EXC']
         >>> comp_name = ['g1','g2','g3']
@@ -756,9 +756,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0.0)
         >>> ram.defineSS(1, ['735'], [], []) # SS 1 with all buses at 735 kV, no zones, no list of buses
 
@@ -793,9 +793,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0.0)
         >>> ram.defineSS(1, ['735'], [], []) # SS 1 with all buses at 735 kV
         >>> ram.getSS(1) # get list of buses in SS 1
@@ -828,9 +828,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0.0)
         >>> ram.defineSS(1, ['735'], [], []) # SS 1 with all buses at 735 kV
         >>> ram.getTrfoSS(1,3,2,'Status')
@@ -885,9 +885,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 0.0) # initialize and wait
         >>> comp_type = ['EXC','EXC','EXC']
         >>> comp_name = ['g1','g2','g3'] # name of synchronous machines
@@ -941,9 +941,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 10.0) # simulate until 10 seconds and pause
         >>> comp_type = ['INJ','EXC','TOR']
         >>> comp_name = ['L_11','g2','g3']
@@ -984,9 +984,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.pauseSim(10.0)
         >>> ram.execSim(case)  # will pause at t=10 s
         """
@@ -1002,9 +1002,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case, 80.0) # simulate until 80 seconds and pause
         >>> ram.addDisturb(100.000, 'CHGPRM DCTL 1-1041  Vsetpt -0.05 0') # Decrease the setpoint of the DCTL by 0.015 pu, at t=100 s
         >>> ram.addDisturb(100.000, 'CHGPRM DCTL 2-1042  Vsetpt -0.05 0')
@@ -1029,10 +1029,10 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> pyramses.sim.load_MDL("MDLs.dll")
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> stepss.sim.load_MDL("MDLs.dll")
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case)
         """
         return self._ramseslib.c_load_MDL(MDLName.encode('utf-8'))
@@ -1046,12 +1046,12 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> pyramses.sim.load_MDL("MDLs.dll")
-        >>> ram = pyramses.sim()
-        >>> case = pyramses.cfg("cmd.txt")
+        >>> import stepss
+        >>> stepss.sim.load_MDL("MDLs.dll")
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
         >>> ram.execSim(case)
-        >>> pyramses.sim.unload_MDL("MDLs.dll")
+        >>> stepss.sim.unload_MDL("MDLs.dll")
         """
         return self._ramseslib.c_unload_MDL(MDLName.encode('utf-8'))
 
@@ -1064,9 +1064,9 @@ class sim(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> pyramses.sim.load_MDL("MDLs.dll")
-        >>> pyramses.sim.get_MDL_no()
+        >>> import stepss
+        >>> stepss.sim.load_MDL("MDLs.dll")
+        >>> stepss.sim.get_MDL_no()
         1
         """
         return self._ramseslib.c_get_MDL_no()

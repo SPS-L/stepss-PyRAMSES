@@ -6,7 +6,7 @@ standalone executable, and compares the trajectory against the shared
 baseline.
 
 The collapse is by design: sim_minmaxvolt trips at t = 163.14 s, RAMSES
-returns flag -1, and pyramses turns that into a RAMSESError. A run that
+returns flag -1, and stepss turns that into a RAMSESError. A run that
 completes without raising is a regression, not a success.
 """
 
@@ -34,8 +34,8 @@ def nordic_run(tmp_path_factory):
     RAMSES writes roughly 100 MB of output and resolves every path relative to
     the working directory, so the case is copied into a fresh tmp dir.
     """
-    import pyramses
-    from pyramses.globals import RAMSESError
+    import stepss
+    from stepss.globals import RAMSESError
 
     run_dir = tmp_path_factory.mktemp("nordic")
     for src in sorted(CASE_DIR.glob("*")):
@@ -47,7 +47,7 @@ def nordic_run(tmp_path_factory):
 
     os.chdir(run_dir)
     try:
-        case = pyramses.cfg()
+        case = stepss.cfg()
         case.addData("dyn_A.dat")
         case.addData("volt_rat_A.dat")
         case.addData("settings1.dat")
@@ -59,7 +59,7 @@ def nordic_run(tmp_path_factory):
         case.addCont("cont.trace")
         case.addDisc("disc.trace")
 
-        ram = pyramses.sim()
+        ram = stepss.sim()
         trip = None
         try:
             ram.execSim(case)

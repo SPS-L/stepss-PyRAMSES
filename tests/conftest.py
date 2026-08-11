@@ -1,10 +1,10 @@
-"""Shared fixtures for the pyramses helios test suite.
+"""Shared fixtures for the stepss helios test suite.
 
 The tests exercise the bundled helios shared library through the
-:class:`pyramses.helios.HeliosSession` wrapper, using the 6-bus microgrid
+:class:`stepss.helios.HeliosSession` wrapper, using the 6-bus microgrid
 example committed under ``tests/data/``.
 
-Set the ``PYRAMSES_HELIOS_LIB_DIR`` environment variable to test against a
+Set the ``STEPSS_HELIOS_LIB_DIR`` environment variable to test against a
 locally built library instead of the bundled one.
 """
 
@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
-LIB_DIR = os.environ.get("PYRAMSES_HELIOS_LIB_DIR") or None
+LIB_DIR = os.environ.get("STEPSS_HELIOS_LIB_DIR") or None
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def case_6bus(data_dir):
 @pytest.fixture
 def session():
     """A fresh, empty HeliosSession (closed after the test)."""
-    from pyramses.helios import HeliosSession
+    from stepss.helios import HeliosSession
 
     with HeliosSession(lib_dir=LIB_DIR) as pf:
         yield pf

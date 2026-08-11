@@ -1,24 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""pyramses — Python interface for the RAMSES dynamic power-system simulator.
+"""stepss - Python interface to the STEPSS power-system simulation platform.
+
+Drives RAMSES, the time-domain dynamic simulator, and Helios, the AC
+power-flow engine, both of which ship as bundled shared libraries.
 
 Public API exported by this package:
 
-- :class:`~pyramses.cases.cfg` — build and manage a simulation case (input/output files).
-- :class:`~pyramses.simulator.sim` — load the RAMSES shared library and run simulations.
-- :class:`~pyramses.extractor.extractor` — parse Fortran binary trajectory files post-simulation.
-- :class:`~pyramses.extractor.cur` — lightweight NamedTuple holding a (time, value, msg) timeseries.
-- :func:`~pyramses.extractor.curplot` — plot one or more :class:`cur` objects on a single axes.
-- :class:`~pyramses.helios.HeliosSession` — run AC power flows with the Helios engine.
-- :class:`~pyramses.globals.HeliosError` — exception raised by Helios calls.
+- :class:`~stepss.cases.cfg` - build and manage a simulation case (input/output files).
+- :class:`~stepss.simulator.sim` - load the RAMSES shared library and run simulations.
+- :class:`~stepss.extractor.extractor` - parse Fortran binary trajectory files post-simulation.
+- :class:`~stepss.extractor.cur` - lightweight NamedTuple holding a (time, value, msg) timeseries.
+- :func:`~stepss.extractor.curplot` - plot one or more :class:`cur` objects on a single axes.
+- :class:`~stepss.helios.HeliosSession` - run AC power flows with the Helios engine.
+- :class:`~stepss.globals.HeliosError` - exception raised by Helios calls.
 
 Module-level flags set at import time:
 
-- ``__runTimeObs__`` — ``True`` when gnuplot is available on the system PATH and runtime
+- ``__runTimeObs__`` - ``True`` when gnuplot is available on the system PATH and runtime
   observable plots are therefore enabled; ``False`` otherwise.
+
+This package was previously distributed as ``pyramses``. The ``pyramses``
+distribution on PyPI is now a forwarding shim onto this one.
 """
 
-__package_name__ = "pyramses"
+__package_name__ = "stepss"
 __version__ = '3.58'
 __author__ = "Petros Aristidou"
 __copyright__ = "Petros Aristidou"

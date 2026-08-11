@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Simulation case configuration for pyramses.
+"""Simulation case configuration for stepss.
 
 Defines :class:`cfg`, which collects all input and output file paths required
 by the RAMSES solver and serialises them into the RAMSES command-file format.
@@ -22,7 +22,7 @@ class cfg(object):
     data files, disturbance file, trajectory file, observables, trace outputs,
     and optional runtime observable definitions.  The assembled configuration
     can be serialised to a RAMSES command file via :meth:`writeCmdFile`, which
-    is called automatically by :meth:`~pyramses.simulator.sim.execSim`.
+    is called automatically by :meth:`~stepss.simulator.sim.execSim`.
 
     A case can be built programmatically (by calling the ``add*`` methods) or
     loaded from an existing command file by passing its path to *cmd*.
@@ -41,8 +41,8 @@ class cfg(object):
 
     :Example:
 
-    >>> import pyramses
-    >>> case = pyramses.cfg()
+    >>> import stepss
+    >>> case = stepss.cfg()
     >>> case.addData('dyn.dat')
     >>> case.addData('volt_rat.dat')
     >>> case.addData('settings.dat')
@@ -233,8 +233,8 @@ class cfg(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case1 = pyramses.cfg()
+        >>> import stepss
+        >>> case1 = stepss.cfg()
         >>> case1.addInit("init.trace")
 
         .. warning:: If the file already exists, it will be overwritten without warning!
@@ -262,9 +262,9 @@ class cfg(object):
 
         :Example:
 
-        >>> import pyramses
+        >>> import stepss
         >>> import os
-        >>> case1 = pyramses.cfg()
+        >>> case1 = stepss.cfg()
         >>> case1.addOut(os.path.join(os.getcwd(),'output.trace'))
 
         .. note:: If the file already exists, the output will be appended to that file.
@@ -295,8 +295,8 @@ class cfg(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case1 = pyramses.cfg()
+        >>> import stepss
+        >>> case1 = stepss.cfg()
         >>> case1.addCont("cont.trace")
 
         .. warning:: If the file already exists, it will be overwritten without warning!
@@ -322,7 +322,7 @@ class cfg(object):
         """Set the Fortran binary trajectory output file.
 
         The trajectory file is written by RAMSES during the simulation and later
-        parsed by :class:`~pyramses.extractor.extractor` to extract timeseries
+        parsed by :class:`~stepss.extractor.extractor` to extract timeseries
         for individual components.
 
         :param str afile: the filename. The complete path can be given or a path
@@ -330,8 +330,8 @@ class cfg(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case1 = pyramses.cfg()
+        >>> import stepss
+        >>> case1 = stepss.cfg()
         >>> case1.addTrj("output.trj")
 
         .. warning:: If the file already exists, it will be overwritten without warning!
@@ -364,8 +364,8 @@ class cfg(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case1 = pyramses.cfg()
+        >>> import stepss
+        >>> case1 = stepss.cfg()
         >>> case1.addDisc("disc.trace")
 
         .. warning:: If the file already exists, it will be overwritten without warning!
@@ -443,8 +443,8 @@ class cfg(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case1 = pyramses.cfg()
+        >>> import stepss
+        >>> case1 = stepss.cfg()
         >>> case1.addObs("obs.dat")
 
         """
@@ -479,8 +479,8 @@ class cfg(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case1 = pyramses.cfg()
+        >>> import stepss
+        >>> case1 = stepss.cfg()
         >>> case1.addData("dyn_A.dat")
 
         .. warning:: At least one data file must be added before running a simulation.
@@ -526,8 +526,8 @@ class cfg(object):
 
         :Example:
 
-        >>> import pyramses
-        >>> case1 = pyramses.cfg()
+        >>> import stepss
+        >>> case1 = stepss.cfg()
         >>> case1.addDst("short.dst")
 
         .. warning:: A disturbance file must be provided before the simulation can start.

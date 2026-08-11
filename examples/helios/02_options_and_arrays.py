@@ -3,7 +3,7 @@
 
 from pathlib import Path
 
-from pyramses.helios import HeliosSession, Option
+from stepss.helios import HeliosSession, Option
 
 DATA = Path(__file__).resolve().parents[2] / "tests" / "data" / "6bus_mg.dat"
 

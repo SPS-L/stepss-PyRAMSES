@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Global module variables and utilities shared across pyramses.
+"""Global module variables and utilities shared across stepss.
 
 Provides:
 - Module-level configuration flags (``__runTimeObs__``) and the resolved
@@ -9,7 +9,7 @@ Provides:
   platform subdirectory ``libs/win``, ``libs/lin`` or ``libs/mac`` holding
   the shared libraries for the current platform).
 - ``RAMSESError`` — custom exception for RAMSES solver failures.
-- Helper functions used by :mod:`pyramses.cases` and :mod:`pyramses.simulator`.
+- Helper functions used by :mod:`stepss.cases` and :mod:`stepss.simulator`.
 """
 
 import errno
@@ -46,7 +46,7 @@ def CustomWarning(message, category, filename, lineno, file=None, line=None):
     """Format and print a RAMSES warning to stdout.
 
     Replaces the default :func:`warnings.showwarning` handler so that all
-    warnings issued by pyramses carry the ``RAMSESWarning:`` prefix.
+    warnings issued by stepss carry the ``RAMSESWarning:`` prefix.
 
     :param message: warning message object
     :param category: warning category class (unused; included for API compatibility)
@@ -66,7 +66,7 @@ def read_file(fname):
     The path is resolved relative to the directory containing this module,
     making it suitable for reading package data files (e.g. ``README.rst``).
 
-    :param str fname: filename relative to the pyramses package directory
+    :param str fname: filename relative to the stepss package directory
     :returns: full text content of the file
     :rtype: str
     :raises IOError: if the file cannot be opened
@@ -79,7 +79,7 @@ class RAMSESError(Exception):
     """Exception raised for errors returned by the RAMSES solver.
 
     Raised when a RAMSES C library call returns a non-zero status code that
-    cannot be recovered from, or when arguments supplied to a pyramses function
+    cannot be recovered from, or when arguments supplied to a stepss function
     are inconsistent with the current solver state.
     """
     pass

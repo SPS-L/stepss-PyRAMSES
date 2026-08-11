@@ -2,7 +2,7 @@
 
 import pytest
 
-from pyramses.globals import HeliosError
+from stepss.globals import HeliosError
 
 
 def test_trip_branch_redistributes_flow(solved):
@@ -18,7 +18,7 @@ def test_trip_branch_redistributes_flow(solved):
 
 
 def test_reset_restores_initial_state(solved, case_6bus):
-    from pyramses.helios import HeliosSession, SolverStatus
+    from stepss.helios import HeliosSession, SolverStatus
     from conftest import LIB_DIR
 
     solved.trip_branch("B-C")

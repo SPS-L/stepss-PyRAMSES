@@ -7,12 +7,12 @@ This module wraps the bundled ``libhelios_api`` C shared library with an
 explicit ctypes binding and exposes :class:`HeliosSession`, a stateful
 session object with a load → (modify) → solve → query lifecycle.
 
-Unlike the rest of pyramses (which follows the historical camelCase RAMSES
+Unlike the rest of stepss (which follows the historical camelCase RAMSES
 conventions), this module deliberately uses PEP 8 snake_case naming.
 
 Quick start::
 
-    from pyramses.helios import HeliosSession
+    from stepss.helios import HeliosSession
 
     with HeliosSession() as pf:
         pf.load_file("network.dat")
@@ -290,7 +290,7 @@ class HeliosSession:
     """A Helios power-flow session: load → (modify) → solve → query.
 
     :param str lib_dir: optional directory containing the helios shared
-        library, overriding the copy bundled with pyramses (useful for
+        library, overriding the copy bundled with stepss (useful for
         testing pre-release engine builds).
 
     The session is a context manager; on exit the native handle is

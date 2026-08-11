@@ -3,8 +3,8 @@
 import numpy
 import pytest
 
-from pyramses.globals import HeliosError
-from pyramses.helios import BusType, Option
+from stepss.globals import HeliosError
+from stepss.helios import BusType, Option
 
 
 def test_element_counts(solved):

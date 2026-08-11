@@ -3,7 +3,7 @@
 
 from pathlib import Path
 
-from pyramses.helios import HeliosSession
+from stepss.helios import HeliosSession
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "tests" / "data"
 
