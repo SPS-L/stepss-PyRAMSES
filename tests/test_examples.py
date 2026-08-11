@@ -32,6 +32,10 @@ def test_console_script_target_is_importable():
     Regression guard: `stepss/scripts/` had no __init__.py, so find_packages()
     skipped it and the installed entry point pointed at a missing module.
     """
+    import stepss.scripts
     from stepss.scripts.exec import run
 
     assert callable(run)
+    assert stepss.scripts.__file__ is not None, (
+        "stepss.scripts must have an __init__.py (not a PEP 420 namespace package)"
+    )
