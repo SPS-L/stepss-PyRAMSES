@@ -1,6 +1,6 @@
 name: bundled-drift-check
 
-# sync-upstream-release.yml serialises on the pyramses-sync concurrency
+# sync-upstream-release.yml serialises on the stepss-sync concurrency
 # group, which holds at most one pending run. If a second upstream release
 # dispatches while a sync is still running, the queued run is superseded and
 # cancelled *before it gets a runner* -- zero jobs execute -- so nothing
@@ -39,7 +39,7 @@ jobs:
       - name: Read the bundled versions
         id: bundled
         run: |
-          BUNDLED="src/pyramses/_bundled.py"
+          BUNDLED="src/stepss/_bundled.py"
           [ -f "$BUNDLED" ] || { echo "FAIL: not found: $BUNDLED"; exit 1; }
           # Same sed style tools/bump_version.sh's read_assign() uses.
           RAMSES="$(sed -n "s/^RAMSES_VERSION[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" "$BUNDLED" | head -n1)"
@@ -101,7 +101,7 @@ jobs:
         id: pypi
         run: |
           set -euo pipefail
-          INIT="src/pyramses/__init__.py"
+          INIT="src/stepss/__init__.py"
           [ -f "$INIT" ] || { echo "FAIL: not found: $INIT"; exit 1; }
           # Same sed style tools/bump_version.sh's read_assign() uses.
           REPO_VERSION="$(sed -n "s/^__version__[[:space:]]*=[[:space:]]*[\"']\([^\"']*\)[\"'].*/\1/p" "$INIT" | head -n1)"
@@ -113,14 +113,14 @@ jobs:
           # unexpected shape below is an explicit hard failure, so the run goes
           # red rather than quietly reporting OK.
           if ! curl -fsS --retry 3 --retry-delay 5 --max-time 60 \
-                 -o pypi.json https://pypi.org/pypi/pyramses/json; then
-            echo "FAIL: could not query https://pypi.org/pypi/pyramses/json"
+                 -o pypi.json https://pypi.org/pypi/stepss/json; then
+            echo "FAIL: could not query https://pypi.org/pypi/stepss/json"
             exit 1
           fi
           PYPI_VERSION="$(jq -r '.info.version // empty' pypi.json)"
           [ -n "$PYPI_VERSION" ] || { echo "FAIL: no .info.version in the PyPI response"; exit 1; }
 
-          echo "pyramses: master=$REPO_VERSION pypi=$PYPI_VERSION"
+          echo "stepss: master=$REPO_VERSION pypi=$PYPI_VERSION"
 
           # Numeric major.minor.patch compare. bump_version.sh enforces exactly
           # that shape, so anything else is a corrupted state, not a version to
@@ -193,7 +193,7 @@ jobs:
           BODY="$(cat <<EOF
           This is filed by \`bundled-drift-check\`, which runs on a daily
           schedule. A sync run superseded while queued in the
-          \`pyramses-sync\` concurrency group is cancelled with **zero jobs
+          \`stepss-sync\` concurrency group is cancelled with **zero jobs
           run**, so nothing inside \`sync-upstream-release.yml\` itself can
           ever report that loss. This check instead compares two things against
           the outside world, which catches a dropped sync regardless of cause:
@@ -216,7 +216,7 @@ jobs:
 
             Recover with:
             \`\`\`
-            gh api /repos/SPS-L/stepss-pyramses/dispatches \\
+            gh api /repos/SPS-L/stepss-python-ui/dispatches \\
               -f event_type=ramses-release \\
               -f "client_payload[tag]=$RAMSES_LATEST"
             \`\`\`
@@ -232,7 +232,7 @@ jobs:
 
             Recover with:
             \`\`\`
-            gh api /repos/SPS-L/stepss-pyramses/dispatches \\
+            gh api /repos/SPS-L/stepss-python-ui/dispatches \\
               -f event_type=helios-release \\
               -f "client_payload[tag]=$HELIOS_LATEST"
             \`\`\`
@@ -251,13 +251,13 @@ jobs:
             this state: \`master\` moved, the GitHub release exists with the
             gated wheel attached, and nothing was published.
 
-            Check https://pypi.org/project/pyramses/#history first, in case the
+            Check https://pypi.org/project/stepss/#history first, in case the
             upload did complete and only the reporting was lost. If \`$REPO_VERSION\`
             really is absent, upload the wheel already attached to the
             \`v$REPO_VERSION\` release -- do not rebuild:
             \`\`\`
             gh workflow run python-publish.yml \\
-              --repo SPS-L/stepss-pyramses \\
+              --repo SPS-L/stepss-python-ui \\
               -f tag=v$REPO_VERSION
             \`\`\`
           EOF

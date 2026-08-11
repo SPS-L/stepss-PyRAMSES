@@ -1,7 +1,7 @@
 name: sync-upstream-release
 
 # Fired by stepss-ramses or stepss-helios when either publishes a release.
-# Refreshes the binaries pyramses bundles, proves the built wheel works on
+# Refreshes the binaries stepss bundles, proves the built wheel works on
 # every platform, and only then releases and publishes.
 on:
   repository_dispatch:
@@ -33,7 +33,7 @@ permissions:
 
 # Two upstream releases in quick succession must not race for master.
 concurrency:
-  group: pyramses-sync
+  group: stepss-sync
   cancel-in-progress: false
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
       upstream_tag: ${{ steps.vars.outputs.upstream_tag }}
       rehearsal: ${{ steps.vars.outputs.rehearsal }}
       duplicate: ${{ steps.dup.outputs.duplicate }}
-      pyramses_tag: ${{ steps.bump.outputs.pyramses_tag }}
+      stepss_tag: ${{ steps.bump.outputs.stepss_tag }}
       branch: ${{ steps.commit.outputs.branch }}
       head_sha: ${{ steps.commit.outputs.head_sha }}
       base_sha: ${{ steps.commit.outputs.base_sha }}
@@ -144,7 +144,7 @@ jobs:
       # sender's release workflow replays `event_name == 'release'` and fires
       # the dispatch again, and the recovery command that
       # bundled-drift-check.yml prints into an issue can be pasted twice. The
-      # computed pyramses tag cannot detect that: it is a fresh patch bump off
+      # computed stepss tag cannot detect that: it is a fresh patch bump off
       # master, so it never pre-exists and the check below it is vacuous
       # against this case. What does detect it is _bundled.py -- if master
       # already records this exact tag for this source, the binaries are
@@ -162,7 +162,7 @@ jobs:
       # gate, the fast-forward check) stays exactly as it was.
       #
       # This is a deliberate manual action, taken by a human who has checked
-      # https://pypi.org/project/pyramses/#history and knows a new version is
+      # https://pypi.org/project/stepss/#history and knows a new version is
       # warranted. An upstream repository must NEVER set it automatically: a
       # sender that always forced would turn every re-run of its own release
       # workflow into another spent PyPI version.
@@ -179,7 +179,7 @@ jobs:
           REHEARSAL: ${{ steps.vars.outputs.rehearsal }}
           FORCE: ${{ github.event.client_payload.force }}
         run: |
-          BUNDLED="src/pyramses/_bundled.py"
+          BUNDLED="src/stepss/_bundled.py"
           if [ "$SOURCE" = "manual" ]; then
             # Nothing to compare: a manual release changes no bundled version,
             # so it can never be the repeat of an upstream announcement. Its
@@ -255,7 +255,7 @@ jobs:
             # has. Refreshing anything here would silently widen the change.
             echo "Manual release: bundled libraries left untouched"
           fi
-          git status --short src/pyramses/libs
+          git status --short src/stepss/libs
 
       - name: Bump the version and record the bundled upstreams
         id: bump
@@ -272,9 +272,9 @@ jobs:
           else
             NEW="$(bash tools/bump_version.sh "$SOURCE" "$TAG")"
           fi
-          echo "pyramses_tag=v$NEW" >> "$GITHUB_OUTPUT"
-          echo "New pyramses version: $NEW"
-          cat src/pyramses/_bundled.py
+          echo "stepss_tag=v$NEW" >> "$GITHUB_OUTPUT"
+          echo "New stepss version: $NEW"
+          cat src/stepss/_bundled.py
 
       # A backstop against a hand-forced state (a tag or release created out of
       # band), not against a duplicate dispatch: the tag it checks is a fresh
@@ -283,15 +283,15 @@ jobs:
       - name: Refuse to re-release an existing tag
         if: steps.dup.outputs.duplicate != 'true' && steps.vars.outputs.rehearsal == 'false'
         env:
-          TAG: ${{ steps.bump.outputs.pyramses_tag }}
+          TAG: ${{ steps.bump.outputs.stepss_tag }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            echo "FAIL: tag $TAG already exists in stepss-pyramses"
+            echo "FAIL: tag $TAG already exists in stepss-python-ui"
             exit 1
           fi
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "FAIL: release $TAG already exists in stepss-pyramses"
+            echo "FAIL: release $TAG already exists in stepss-python-ui"
             exit 1
           fi
           echo "OK: $TAG is free"
@@ -302,7 +302,7 @@ jobs:
         env:
           SOURCE: ${{ steps.vars.outputs.source }}
           TAG: ${{ steps.vars.outputs.upstream_tag }}
-          PYTAG: ${{ steps.bump.outputs.pyramses_tag }}
+          PYTAG: ${{ steps.bump.outputs.stepss_tag }}
           REHEARSAL: ${{ steps.vars.outputs.rehearsal }}
         run: |
           if [ "$SOURCE" = "manual" ]; then
@@ -316,7 +316,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add -A src/pyramses/libs src/pyramses/_bundled.py src/pyramses/__init__.py
+          git add -A src/stepss/libs src/stepss/_bundled.py src/stepss/__init__.py
           git status --short
           git commit -m "$MSG"
           if [ "$REHEARSAL" = "true" ]; then
@@ -393,12 +393,12 @@ jobs:
           # The bundled binaries are the whole point of this package; a
           # package_data glob that silently drops one would otherwise only
           # surface as a runtime failure for a user on that platform.
-          for want in ('pyramses/libs/lin/ramses.so',
-                       'pyramses/libs/win/ramses.dll',
-                       'pyramses/libs/mac/ramses.so',
-                       'pyramses/libs/lin/libhelios_api.so',
-                       'pyramses/libs/win/helios_api.dll',
-                       'pyramses/libs/mac/libhelios_api.dylib'):
+          for want in ('stepss/libs/lin/ramses.so',
+                       'stepss/libs/win/ramses.dll',
+                       'stepss/libs/mac/ramses.so',
+                       'stepss/libs/lin/libhelios_api.so',
+                       'stepss/libs/win/helios_api.dll',
+                       'stepss/libs/mac/libhelios_api.dylib'):
               assert want in names, 'wheel is missing %s' % want
               print('ok:', want)
           EOF
@@ -466,7 +466,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pytest
           python -m pip install "$(ls dist/*.whl)"
-          python -c "import pyramses; print(pyramses.__version__, pyramses.__ramses_version__, pyramses.__helios_version__)"
+          python -c "import stepss; print(stepss.__version__, stepss.__ramses_version__, stepss.__helios_version__)"
 
       - name: Full test suite against the installed wheel
         shell: bash
@@ -486,9 +486,11 @@ jobs:
       needs.fetch.outputs.rehearsal == 'false'
       && needs.fetch.outputs.duplicate != 'true'
     runs-on: ubuntu-24.04
+    environment: pypi
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write
     outputs:
       master_moved: ${{ steps.ff.outputs.moved }}
       release_published: ${{ steps.publish.outputs.published }}
@@ -529,14 +531,14 @@ jobs:
       - name: Cut the GitHub release
         id: publish
         env:
-          TAG: ${{ needs.fetch.outputs.pyramses_tag }}
+          TAG: ${{ needs.fetch.outputs.stepss_tag }}
           HEAD_SHA: ${{ needs.fetch.outputs.head_sha }}
           SOURCE: ${{ needs.fetch.outputs.source }}
           UPSTREAM_TAG: ${{ needs.fetch.outputs.upstream_tag }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          RAMSES_VER="$(sed -n 's/^RAMSES_VERSION = "\(.*\)"/\1/p' src/pyramses/_bundled.py)"
-          HELIOS_VER="$(sed -n 's/^HELIOS_VERSION = "\(.*\)"/\1/p' src/pyramses/_bundled.py)"
+          RAMSES_VER="$(sed -n 's/^RAMSES_VERSION = "\(.*\)"/\1/p' src/stepss/_bundled.py)"
+          HELIOS_VER="$(sed -n 's/^HELIOS_VERSION = "\(.*\)"/\1/p' src/stepss/_bundled.py)"
           if [ "$SOURCE" = "manual" ]; then
             LEDE="Manual release of the python package. Neither bundled library changed;
           the versions below are the ones this release inherits from the previous one."
@@ -563,7 +565,7 @@ jobs:
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$HEAD_SHA" \
-            --title "PyRAMSES $TAG" \
+            --title "STEPSS $TAG" \
             --notes-file notes.md \
             dist/*
           echo "published=true" >> "$GITHUB_OUTPUT"
@@ -572,10 +574,13 @@ jobs:
       # only once master has moved and the release exists. If this step alone
       # fails, the tested wheel is attached to the release above and
       # python-publish.yml can upload it by hand.
+      #
+      # Authenticated by OIDC trusted publishing: no secret is read here, and
+      # the token GitHub mints names this repository and this workflow file,
+      # both of which the publisher on PyPI is registered against.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/
 
       # Only reached if the upload above succeeded, so this is a faithful
@@ -643,7 +648,7 @@ jobs:
             # out mid-flight may well have landed. Claiming it did not, and
             # being wrong, sends the reader to re-upload a version that is
             # already spent.
-            STATE="\`master\` moved and the release was cut, but **the PyPI upload did not report success**. It may still have completed: check https://pypi.org/project/pyramses/#history before retrying anything. Only if the version is genuinely absent, upload the tested wheel attached to the release with the \`Publish Python Package\` workflow, giving it that release tag -- never by rebuilding."
+            STATE="\`master\` moved and the release was cut, but **the PyPI upload did not report success**. It may still have completed: check https://pypi.org/project/stepss/#history before retrying anything. Only if the version is genuinely absent, upload the tested wheel attached to the release with the \`Publish Python Package\` workflow, giving it that release tag -- never by rebuilding."
           elif [ "$MASTER_MOVED" = "true" ]; then
             # Re-running is no longer a recovery here: master now bundles this
             # upstream tag, so the duplicate guard in `fetch` would skip the
@@ -668,10 +673,10 @@ jobs:
           **This run was cancelled** (by hand, or by a job timeout), so the state above
           records only what had *reported* success before it stopped. A step that was in
           flight may have completed anyway. Verify against \`master\`, the releases page
-          and https://pypi.org/project/pyramses/#history before retrying."
+          and https://pypi.org/project/stepss/#history before retrying."
           fi
 
-          TITLE="$SRC $TAG: pyramses sync failed"
+          TITLE="$SRC $TAG: stepss sync failed"
           BODY="$(cat <<-EOF
           	The sync-upstream-release workflow did not complete for $SRC \`$TAG\`.
 

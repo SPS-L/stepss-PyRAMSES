@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'pyramses release tag whose attached distributions to upload, e.g. v0.3.1'
+        description: 'stepss release tag whose attached distributions to upload, e.g. v0.3.1'
         required: true
         type: string
 
@@ -28,8 +28,10 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    environment: pypi
     permissions:
       contents: read
+      id-token: write
     steps:
       # No checkout: nothing in the working tree is used or trusted. The
       # release assets are the whole input.
@@ -66,14 +68,17 @@ jobs:
           VERSION="${TAG#v}"
           WHEEL="$(find dist -maxdepth 1 -name '*.whl')"
           case "$(basename "$WHEEL")" in
-            pyramses-"$VERSION"-*) echo "OK: $WHEEL matches $TAG" ;;
-            *) echo "FAIL: $WHEEL does not match tag $TAG (expected pyramses-$VERSION-*)"; exit 1 ;;
+            stepss-"$VERSION"-*) echo "OK: $WHEEL matches $TAG" ;;
+            *) echo "FAIL: $WHEEL does not match tag $TAG (expected stepss-$VERSION-*)"; exit 1 ;;
           esac
 
-      # The same action and secret the sync workflow uses, on bytes that were
-      # gated on Linux, Windows and macOS before the release was cut.
+      # The same action the sync workflow uses, on bytes that were gated on
+      # Linux, Windows and macOS before the release was cut. Authenticated by
+      # OIDC trusted publishing, like the sync workflow: no secret is read
+      # here, and the token GitHub mints names this repository and this
+      # workflow file, both of which the publisher on PyPI is registered
+      # against.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: dist/
