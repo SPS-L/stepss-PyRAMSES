@@ -9,5 +9,5 @@ Packaging now reads from ../README.rst first (see setup.py), with this file kept
 
 Project homepage and full docs:
 
-- https://stepss.sps-lab.org/pyramses/
+- https://stepss.sps-lab.org/python/
 - https://github.com/SPS-L/stepss-python-ui

@@ -211,13 +211,13 @@ overwritten by the next sync.
 Documentation
 -------------
 
-Full documentation is available at `https://stepss.sps-lab.org/pyramses/ <https://stepss.sps-lab.org/pyramses/>`_.
+Full documentation is available at `https://stepss.sps-lab.org/python/ <https://stepss.sps-lab.org/python/>`_.
 
-- `Overview <https://stepss.sps-lab.org/pyramses/overview/>`_
-- `Installation <https://stepss.sps-lab.org/pyramses/installation/>`_
-- `Power Flow with Helios <https://stepss.sps-lab.org/pyramses/helios/>`_
-- `API Reference <https://stepss.sps-lab.org/pyramses/api-reference/>`_
-- `Examples <https://stepss.sps-lab.org/pyramses/examples/>`_
+- `Overview <https://stepss.sps-lab.org/python/overview/>`_
+- `Installation <https://stepss.sps-lab.org/python/installation/>`_
+- `Power Flow with Helios <https://stepss.sps-lab.org/python/helios/>`_
+- `API Reference <https://stepss.sps-lab.org/python/api-reference/>`_
+- `Examples <https://stepss.sps-lab.org/python/examples/>`_
 
 Support:
 
