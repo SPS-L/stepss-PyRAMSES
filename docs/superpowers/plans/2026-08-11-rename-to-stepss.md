@@ -851,12 +851,18 @@ this package. New code should use ``import stepss``.
 
 - [ ] **Step 4: Replace the remaining prose references**
 
+`tests/baselines/README.md` and `tests/data/nordic/README.md` are included here because Task 1 correctly left them alone: they are prose, not code, and no earlier task claimed them. Do not touch `tests/baselines/nordic_baseline.npz` itself, only the README beside it.
+
 ```bash
 cd /home/apetros/Code/stepss/stepss-python-ui
-sed -i 's/pyramses/stepss/g; s/PyRAMSES/STEPSS/g' src/README.rst NOTICE .github/copilot-instructions.md
+sed -i 's/pyramses/stepss/g; s/PyRAMSES/STEPSS/g' \
+  src/README.rst NOTICE .github/copilot-instructions.md \
+  tests/baselines/README.md tests/data/nordic/README.md
 ```
 
 Then read `README.rst` in full and fix any sentence the earlier edits left reading awkwardly, in particular the `pyramses.helios` module reference under Key Features, which must now read `stepss.helios`.
+
+`tests/baselines/README.md` needs a second look after the substitution: it describes the baseline being shared byte-for-byte with `stepss-ramses`, and any sentence that now claims `stepss` produces the baseline rather than the RAMSES engine has changed meaning and must be reworded.
 
 - [ ] **Step 5: Update `CLAUDE.md`**
 
