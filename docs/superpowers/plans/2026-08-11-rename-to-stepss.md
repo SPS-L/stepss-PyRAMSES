@@ -940,7 +940,11 @@ git checkout -b rename-to-stepss
 sed -i 's|SPS-L/stepss-pyramses|SPS-L/stepss-python-ui|g; s/stepss-pyramses/stepss-python-ui/g' .github/workflows/release.yml
 ```
 
-Leave `pyramses-libs-*.zip` at lines 67, 159, 231 and 270-272 alone: those are this repo's own asset names and `tools/update_ramses_libs.sh` fetches them by that exact pattern.
+Leave the `pyramses-libs-*.zip` **filenames** at lines 67, 159, 231 and 270-272 alone: those are this repo's own asset names and `tools/update_ramses_libs.sh` fetches them by that exact pattern.
+
+But lines 270-272 are half asset name and half destination path, and **the destination half must change**. They read `place ramses.so in src/pyramses/libs/lin/` and similar; `src/pyramses/libs/` no longer exists, so those instructions send a human refreshing the bundle by hand to a directory that is not there. Change only the right-hand side to `src/stepss/libs/{lin,win,mac}/`.
+
+Also rename the job id `notify-pyramses` (line 349) to `notify-python-ui` and reword the comment above it, matching what the equivalent job in `stepss-helios` gets. Grep the whole file for the old job id first: a job id can also appear in a `needs:` list, an `if:` condition, or a `${{ needs.<id>.outputs.* }}` expression, and a half-renamed id breaks the workflow at parse time or silently skips the job.
 
 - [ ] **Step 2: Verify**
 
