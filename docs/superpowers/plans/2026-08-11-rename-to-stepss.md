@@ -999,16 +999,54 @@ git commit -m "Dispatch to stepss-python-ui after the rename"
 
 Do this only after P0.1 has actually landed, or the new URL will not resolve.
 
-- [ ] **Step 1: Move the submodule**
+### Two constraints that override the mechanics below
+
+**1. Do not pin an unpushed commit.** `stepss/CLAUDE.md` states: "Never pin a commit that hasn't been pushed to the component's remote, it breaks cloning for everyone else." The umbrella currently pins `e8097cf`, which is on `origin/master`. The rename work sits on an unpushed `rename-to-stepss` branch. **This task renames the path only and leaves the gitlink at `e8097cf`.** The pointer bump happens later, through the normal `./update.sh` flow, once the branch is merged and pushed.
+
+**2. Do not sweep in other submodules.** `git status` in the umbrella shows several components as modified: `stepss-docs`, `stepss-uramses` and `stepss-test-systems` drifted before this project started, and `stepss-ramses` and `stepss-helios` carry Task 7's unpushed branches. None of them belong in this commit. Stage files by explicit path; never `git add -A` or `git commit -a` here.
+
+### The starting state is already half-moved
+
+The working directory was renamed with a plain `mv`, not `git mv`, before this task ran. So `git mv` is not available to you: the source path no longer exists. `git status` in the umbrella shows `D stepss-pyramses` and `?? stepss-python-ui/`. The submodule's `core.worktree` has already been repaired to point at the new path, so the inner repo works.
+
+- [ ] **Step 1: Confirm the starting state before changing anything**
 
 ```bash
 cd /home/apetros/Code/stepss
-git mv stepss-pyramses stepss-python-ui
+git status --short
+git ls-tree HEAD stepss-pyramses
 ```
 
-`git mv` on a submodule updates `.gitmodules`, the index and `.git/modules` bookkeeping in one step. Doing it by hand leaves the gitdir pointer stale.
+Expected: a `D stepss-pyramses` line, a `?? stepss-python-ui/` line, and a gitlink at `e8097cf9e5247df24d974a87294d1a497fc57ae3`. If the pinned SHA differs, use the value you see and report it; do not use the literal above.
 
-- [ ] **Step 2: Fix the URL, which `git mv` does not change**
+- [ ] **Step 2: Move the gitlink to the new path at its existing SHA**
+
+`git mv` cannot be used, and `git add stepss-python-ui` would pin the unpushed branch head. Rewrite the index entry directly instead, substituting the SHA from Step 1:
+
+```bash
+git rm --cached stepss-pyramses
+git update-index --add --cacheinfo 160000,e8097cf9e5247df24d974a87294d1a497fc57ae3,stepss-python-ui
+git ls-tree HEAD stepss-pyramses
+git diff --cached --stat
+```
+
+The staged diff must show the gitlink moving from `stepss-pyramses` to `stepss-python-ui` with the **same** SHA, and must not list any other submodule.
+
+- [ ] **Step 3: Rename the internal module directory**
+
+`.git/modules/stepss-pyramses` still carries the old name, and the submodule's `.git` file points at it. Bring both in line so the layout matches the path:
+
+```bash
+mv .git/modules/stepss-pyramses .git/modules/stepss-python-ui
+printf 'gitdir: ../.git/modules/stepss-python-ui\n' > stepss-python-ui/.git
+git config --file .git/modules/stepss-python-ui/config core.worktree ../../../stepss-python-ui
+git -C stepss-python-ui status --short
+git -C stepss-python-ui rev-parse --abbrev-ref HEAD
+```
+
+The last two must still work and report a clean tree on branch `rename-to-stepss`. If either errors, the gitdir linkage is broken: restore it before continuing, because every later git operation inside the component depends on it.
+
+- [ ] **Step 4: Fix the URL and section name**
 
 Edit `.gitmodules` so the section reads:
 
@@ -1021,21 +1059,23 @@ Edit `.gitmodules` so the section reads:
 
 The URL stays **relative** so the repo works over both SSH and HTTPS. The tracked branch stays `master`.
 
-- [ ] **Step 3: Sync and verify**
+- [ ] **Step 5: Sync and verify**
 
 ```bash
 git submodule sync stepss-python-ui
-git submodule update --init stepss-python-ui
 git config --file .gitmodules --get submodule.stepss-python-ui.url
+git config --get submodule.stepss-python-ui.url
 ```
 
-Expected: `../stepss-python-ui.git`.
+Expected: `../stepss-python-ui.git` from the first, and the resolved absolute URL ending in `stepss-python-ui.git` from the second. `sync` copies `.gitmodules` into `.git/config`; without it, the old URL lingers in local config.
 
-- [ ] **Step 4: Update the umbrella prose**
+**Do not run `git submodule update`** here. The component is on an unpushed branch with work in it, and `update` would check out the pinned commit and detach the branch, discarding nothing but making the tree confusing. The path rename does not need it.
+
+- [ ] **Step 6: Update the umbrella prose**
 
 In `CLAUDE.md` and `README.md`, replace `stepss-pyramses` with `stepss-python-ui`, and update the component description so it names the `stepss` PyPI package. In `CLAUDE.md`, the sentence "PyRAMSES bundles ramses plus helios" becomes "the `stepss` package bundles ramses plus helios".
 
-- [ ] **Step 5: Verify house style**
+- [ ] **Step 7: Verify house style**
 
 ```bash
 grep -rnP '\x{2014}' CLAUDE.md README.md
@@ -1043,12 +1083,32 @@ grep -rnP '\x{2014}' CLAUDE.md README.md
 
 Expected: no output.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 8: Stage by explicit path and check what is staged**
+
+Note the absence of `stepss-python-ui` from this list: its gitlink was already staged in Step 2 at the old SHA, and naming it again here would restage it at the branch head.
 
 ```bash
-git add .gitmodules CLAUDE.md README.md stepss-python-ui
+git add .gitmodules CLAUDE.md README.md
+git status --short
+git diff --cached --stat
+```
+
+The staged set must be exactly four entries: `.gitmodules`, `CLAUDE.md`, `README.md`, and the gitlink move. **If `stepss-docs`, `stepss-ramses`, `stepss-helios`, `stepss-uramses` or `stepss-test-systems` appears as staged, unstage it** (`git restore --staged <path>`) before committing. Those are other components' unpushed or pre-existing drift and pinning them here would break cloning.
+
+- [ ] **Step 9: Commit**
+
+```bash
 git commit -m "Rename the pyramses submodule to stepss-python-ui"
 ```
+
+- [ ] **Step 10: Prove the result**
+
+```bash
+git show --stat HEAD
+git ls-tree HEAD stepss-python-ui
+```
+
+The commit touches three files plus one gitlink, and the gitlink SHA equals the one recorded in Step 1. Anything else means the commit swept in work it should not have.
 
 ---
 
