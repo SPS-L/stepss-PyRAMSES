@@ -222,7 +222,7 @@ Full documentation is available at `https://stepss.sps-lab.org/python/ <https://
 Support:
 
 - Issues: `https://github.com/SPS-L/stepss-python-ui/issues <https://github.com/SPS-L/stepss-python-ui/issues>`_
-- Project page: `https://sps-lab.org/project/pyramses/ <https://sps-lab.org/project/pyramses/>`_
+- Project page: `https://sps-lab.org/project/stepss/ <https://sps-lab.org/project/stepss/>`_
 
 License
 -------
