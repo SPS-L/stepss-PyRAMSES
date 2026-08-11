@@ -24,3 +24,14 @@ def test_example_runs(example, monkeypatch, tmp_path, capsys):
 
 def test_examples_exist():
     assert len(EXAMPLES) == 5
+
+
+def test_console_script_target_is_importable():
+    """The `ramses` console script entry point must be shipped in the wheel.
+
+    Regression guard: `stepss/scripts/` had no __init__.py, so find_packages()
+    skipped it and the installed entry point pointed at a missing module.
+    """
+    from stepss.scripts.exec import run
+
+    assert callable(run)
