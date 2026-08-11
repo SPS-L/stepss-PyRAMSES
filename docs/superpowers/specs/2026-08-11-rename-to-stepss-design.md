@@ -50,12 +50,18 @@ twice.
 - **The version scheme.** Versions stay `<bundled RAMSES version>[.<counter>]`.
   Renaming in place preserves the tags, and `bump_version.sh` derives the
   counter from the tags that already exist rather than from a stored number,
-  so it keeps counting correctly straight through the rename. Concretely: the
-  newest tag is `v0.3.5`, which predates the scheme and already bundles RAMSES
-  v3.57, and no tag on the 3.57 base exists yet. The bare version goes to
-  whichever release is first on a given base, so **the first `stepss` release
-  is `3.57`**. No reset to 1.0, and no discontinuity in the rule that the
-  leading components name the RAMSES shared library inside the wheel.
+  so it keeps counting correctly straight through the rename. The rename does
+  not perturb it at all, which the events of 2026-08-11 demonstrated: RAMSES
+  v3.58 was published while this spec was being written, and the automation
+  released `pyramses 3.58` (bundling RAMSES v3.58, Helios v1.4.1) on the old
+  name, unaffected. Tag `v3.58` therefore exists, the bare version on that base
+  is taken, and **the first `stepss` release is `3.58.1`** (confirmed by
+  running `bash tools/bump_version.sh manual`). No reset to 1.0, and no
+  discontinuity in the rule that the leading components name the RAMSES shared
+  library inside the wheel.
+
+  Re-derive that number the same way if a further upstream release lands before
+  the first `stepss` release; do not trust it as a constant.
 - **Public API names**: `cfg`, `sim`, `extractor`, `cur`, `curplot`,
   `HeliosSession`, `HeliosError`. Only the package containing them moves. This
   is what makes the shim a pure forward with no translation layer.
@@ -133,7 +139,7 @@ Rewriting either would misrepresent what happened. They keep the old name.
 ## Component 3: the transition shim
 
 A second distribution named `pyramses`, sourced at `compat/pyramses/` inside
-the renamed repository, depending on `stepss>=3.57`.
+the renamed repository, depending on `stepss>=3.58.1`.
 
 ```python
 import importlib, sys, warnings
@@ -157,8 +163,8 @@ leave `from pyramses.globals import RAMSESError` raising `ModuleNotFoundError`,
 which is precisely the import path the Nordic regression test and the CLAUDE.md
 guidance use.
 
-The shim's own distribution version is `3.57`, matching the first `stepss`
-release. Under PEP 440 that is greater than the last real `pyramses` (0.3.5),
+The shim's own distribution version is `3.58.1`, matching the first `stepss`
+release. Under PEP 440 that is greater than the last real `pyramses` (3.58),
 so unpinned users upgrade into the bridge. The `>=` dependency means it keeps
 delivering the current engine indefinitely without further releases. Note that
 `pyramses.__version__` will therefore report the version of the `stepss`
@@ -320,7 +326,7 @@ catches every internal link the page move breaks.
 | The `stepss` name is taken before the first release. A pending publisher does not reserve it. | Keep the gap between configuration and step 7 short. |
 | Break-glass unusable if only its publisher is wrong | Both `stepss` publishers are registered up front, so the two paths fail independently. |
 | Inbound links to `/pyramses/*` break | Five redirect entries, matching the precedent set for `/user-guide/pfc`. |
-| A downstream repo pins `pyramses==0.3.5` | Unaffected. Unpinned consumers upgrade into the shim. |
+| A downstream repo pins `pyramses==3.58` (or any earlier version) | Unaffected. Unpinned consumers upgrade into the shim. |
 
 ## Appendix: follow-up sweep (out of scope)
 

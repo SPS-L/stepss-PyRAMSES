@@ -12,8 +12,9 @@
 
 ## Global Constraints
 
-- **First release version is `3.57`**, bare. The newest tag is `v0.3.5`, which predates the version scheme and already bundles RAMSES v3.57, and no tag on the 3.57 base exists yet. The bare version goes to whichever release is first on a given base.
-- **The shim pins `stepss>=3.57`.**
+- **First release version is `3.58.1`.** RAMSES v3.58 was published on 2026-08-11 while this plan was being written, and the sync automation released `pyramses 3.58` (bundling RAMSES v3.58 and Helios v1.4.1) before the rename began. Tag `v3.58` therefore already exists, so the bare version on the 3.58 base is taken and the next counter is `.1`. Verified by running `bash tools/bump_version.sh manual`, which prints `3.58.1`. **If another upstream release lands before the first `stepss` release, re-derive this number the same way rather than trusting this line.**
+- **The last real `pyramses` release is `3.58`**, not 0.3.5. The shim's own version must exceed it or unpinned users never upgrade into the bridge.
+- **The shim pins `stepss>=3.58.1`** and is itself versioned `3.58.1`.
 - **Never rename `pyramses-libs-*.zip`.** These are release-asset names produced by `stepss-ramses/.github/workflows/release.yml` (lines 67, 159, 231). They appear in `tools/update_ramses_libs.sh` at lines 28, 34, 35. Renaming them breaks the binary fetch.
 - **Never rename the `PYRAMSES_DISPATCH_TOKEN` secret.** It lives in `stepss-ramses` and `stepss-helios`. It is an identifier, not user-facing; renaming it means coordinated secret rotation across two private repos for zero benefit.
 - **Never rewrite historical documents.** `docs/superpowers/plans/2026-08-06-*`, `docs/superpowers/specs/2026-08-06-*` and `stepss-docs/public/changelog.txt` describe what was true at the time. They keep the old name.
@@ -46,17 +47,17 @@
 
 These are GitHub and PyPI console actions. They are not code and cannot be scripted from here. **Publishers are already registered** (confirmed with the user).
 
-- [ ] **P0.1** Rename the repository: GitHub, Settings, `stepss-pyramses` to `stepss-python-ui`. Must happen before any publish, because the OIDC token carries the repository's current name and GitHub's rename redirect does not apply to it.
+- [x] **P0.1** Rename the repository: GitHub, Settings, `stepss-pyramses` to `stepss-python-ui`. Must happen before any publish, because the OIDC token carries the repository's current name and GitHub's rename redirect does not apply to it.
 
-- [ ] **P0.2** Update your local remote after the rename:
+- [x] **P0.2** Update your local remote after the rename:
 
 ```bash
 git remote set-url origin git@github.com:SPS-L/stepss-python-ui.git
 ```
 
-- [ ] **P0.3** Create the `pypi` environment: Settings, Environments, New environment, name `pypi`. Set **Deployment branches** to "Selected branches", add `master`. Add **no required reviewers** (the release path is unattended `repository_dispatch`; a reviewer would hang it).
+- [x] **P0.3** Create the `pypi` environment: Settings, Environments, New environment, name `pypi`. Set **Deployment branches** to "Selected branches", add `master`. Add **no required reviewers** (the release path is unattended `repository_dispatch`; a reviewer would hang it).
 
-- [ ] **P0.4** Confirm the three trusted publishers exist and read exactly:
+- [x] **P0.4** Confirm the three trusted publishers exist and read exactly:
 
 | PyPI project | Owner | Repository | Workflow | Environment |
 |---|---|---|---|---|
@@ -80,7 +81,7 @@ git remote set-url origin git@github.com:SPS-L/stepss-python-ui.git
 - [ ] **Step 1: Confirm the starting state is green**
 
 ```bash
-cd /home/apetros/Code/stepss/stepss-pyramses
+cd /home/apetros/Code/stepss/stepss-python-ui
 pip install ./src pytest
 pytest tests/ -v
 ```
@@ -134,7 +135,7 @@ These files carry the name only in docstrings, `:class:` targets and error messa
 **`--include=*.py` is mandatory, not tidiness.** `src/stepss/libs/` holds the compiled shared libraries, and a bare `grep -rl` reports binary matches: `ramses.so` and `ramses.dll` can contain the string `pyramses` in their symbol or path tables. Feeding those to `sed -i` would rewrite the binaries in place and corrupt the bundled engine, and the Nordic gate would then fail in a way that looks like a solver regression.
 
 ```bash
-cd /home/apetros/Code/stepss/stepss-pyramses
+cd /home/apetros/Code/stepss/stepss-python-ui
 grep -rl --include='*.py' 'pyramses\|PyRAMSES' src/stepss/ | xargs sed -i 's/pyramses/stepss/g; s/PyRAMSES/STEPSS/g'
 ```
 
@@ -188,7 +189,7 @@ Also update the module docstring at the top of `setup.py`, which names `pyramses
 - [ ] **Step 7: Update the test suite imports**
 
 ```bash
-cd /home/apetros/Code/stepss/stepss-pyramses
+cd /home/apetros/Code/stepss/stepss-python-ui
 sed -i 's/pyramses/stepss/g; s/PyRAMSES/STEPSS/g; s/PYRAMSES_HELIOS_LIB_DIR/STEPSS_HELIOS_LIB_DIR/g' \
   tests/conftest.py tests/test_nordic.py tests/test_helios_basic.py \
   tests/test_helios_data.py tests/test_helios_modify.py \
@@ -314,7 +315,7 @@ git commit -m "Ship the scripts subpackage so the ramses console script resolves
 - [ ] **Step 1: Rename the path and env-var references, protecting the asset names**
 
 ```bash
-cd /home/apetros/Code/stepss/stepss-pyramses
+cd /home/apetros/Code/stepss/stepss-python-ui
 # Protect the upstream asset name first, substitute, then restore it.
 sed -i 's/pyramses-libs/@@ASSET@@/g' tools/update_ramses_libs.sh
 sed -i 's|src/pyramses|src/stepss|g; s/PYRAMSES_ROOT/STEPSS_ROOT/g; s/PYRAMSES_TAGS/STEPSS_TAGS/g; s/PYRAMSES_LIBS_DIR/STEPSS_LIBS_DIR/g; s/pyramses/stepss/g; s/PyRAMSES/STEPSS/g' \
@@ -348,14 +349,28 @@ bash tools/test_update_ramses_libs.sh
 
 Expected: both PASS.
 
-- [ ] **Step 5: Sanity-check the version computation gives 3.57**
+- [ ] **Step 5: Sanity-check the version computation, without side effects**
+
+`bump_version.sh` **rewrites `src/stepss/_bundled.py` and `src/stepss/__init__.py`** as part of running. Use the `STEPSS_ROOT` override so it writes into a throwaway copy, never the working tree:
 
 ```bash
-STEPSS_TAGS="v0.3.5
-v0.3.4" bash tools/bump_version.sh ramses v3.57
+TMPD="$(mktemp -d)"
+mkdir -p "$TMPD/src/stepss"
+cp src/stepss/__init__.py src/stepss/_bundled.py "$TMPD/src/stepss/"
+STEPSS_ROOT="$TMPD" STEPSS_TAGS="v3.58
+v0.3.5" bash tools/bump_version.sh ramses v3.58
+rm -rf "$TMPD"
 ```
 
-Expected: `3.57` on stdout, matching the Global Constraints. If it prints anything else, stop and report: the version scheme is the one thing this rename must not disturb.
+Expected: `3.58.1` on stdout, matching the Global Constraints. If it prints anything else, stop and report: the version scheme is the one thing this rename must not disturb.
+
+- [ ] **Step 5b: Confirm the working tree is unchanged by that probe**
+
+```bash
+git status --short src/stepss
+```
+
+Expected: no output. If `__init__.py` or `_bundled.py` shows as modified, the probe escaped its sandbox: `git checkout -- src/stepss` and fix the `STEPSS_ROOT` usage before continuing. A stray version bump committed here would collide with the release automation.
 
 - [ ] **Step 6: Commit**
 
@@ -378,7 +393,7 @@ git commit -m "Point the release tooling at src/stepss"
 - [ ] **Step 1: Rename paths and identifiers in `sync-upstream-release.yml`**
 
 ```bash
-cd /home/apetros/Code/stepss/stepss-pyramses
+cd /home/apetros/Code/stepss/stepss-python-ui
 sed -i 's|src/pyramses|src/stepss|g; s|pyramses/libs/|stepss/libs/|g; s/pyramses_tag/stepss_tag/g; s/pyramses-sync/stepss-sync/g; s|pypi.org/project/pyramses|pypi.org/project/stepss|g; s|stepss-pyramses|stepss-python-ui|g; s/PyRAMSES/STEPSS/g; s/pyramses/stepss/g' \
   .github/workflows/sync-upstream-release.yml
 ```
@@ -527,7 +542,7 @@ VPY="$TMPD/venv/bin/python"
 
 "$VPY" -m pip install --quiet --upgrade pip
 "$VPY" -m pip install --quiet "$ROOT/src"
-# --no-deps: the shim's stepss>=3.57 pin cannot resolve until stepss is on
+# --no-deps: the shim's stepss>=3.58.1 pin cannot resolve until stepss is on
 # PyPI, and the local build installed above is the thing under test anyway.
 "$VPY" -m pip install --quiet --no-deps "$ROOT/compat/pyramses"
 
@@ -576,7 +591,7 @@ Create `compat/pyramses/pyramses/__init__.py`:
 
 This distribution exists so that code and notebooks written against
 ``pyramses`` keep running unchanged. It contains no logic of its own: every
-name is the one ``stepss`` defines. It depends on ``stepss>=3.57`` and is
+name is the one ``stepss`` defines. It depends on ``stepss>=3.58.1`` and is
 published once, so it keeps delivering the current engine without ever
 being updated itself.
 """
@@ -630,7 +645,7 @@ def read(name):
 
 setup(
     name='pyramses',
-    version='3.57',
+    version='3.58.1',
     description='Compatibility shim: pyramses is now stepss.',
     long_description=read('README.rst'),
     long_description_content_type='text/x-rst',
@@ -639,7 +654,7 @@ setup(
     url='https://stepss.sps-lab.org',
     license='Apache-2.0',
     packages=['pyramses'],
-    install_requires=['stepss>=3.57'],
+    install_requires=['stepss>=3.58.1'],
     classifiers=[
         "Development Status :: 7 - Inactive",
         "Intended Audience :: Developers",
@@ -829,7 +844,7 @@ Two blocks name the package:
 Renamed from PyRAMSES
 ~~~~~~~~~~~~~~~~~~~~~
 
-This package was published as ``pyramses`` up to version 0.3.5. Existing code
+This package was published as ``pyramses`` up to version 3.58. Existing code
 keeps working: ``pip install pyramses`` now installs a shim that forwards to
 this package. New code should use ``import stepss``.
 ```
@@ -837,7 +852,7 @@ this package. New code should use ``import stepss``.
 - [ ] **Step 4: Replace the remaining prose references**
 
 ```bash
-cd /home/apetros/Code/stepss/stepss-pyramses
+cd /home/apetros/Code/stepss/stepss-python-ui
 sed -i 's/pyramses/stepss/g; s/PyRAMSES/STEPSS/g' src/README.rst NOTICE .github/copilot-instructions.md
 ```
 
@@ -1086,7 +1101,7 @@ At the end of `src/content/docs/python/overview.md`:
 
 ```markdown
 :::note[Renamed from PyRAMSES]
-This package was published as `pyramses` up to version 0.3.5. Existing code
+This package was published as `pyramses` up to version 3.58. Existing code
 keeps working: `pip install pyramses` installs a shim that forwards to
 `stepss`. New code should use `import stepss`.
 :::
@@ -1138,7 +1153,7 @@ Run these in order, after Tasks 1-9 are merged to their default branches.
 
 - [ ] **R2** Confirm the rehearsal's build gate asserted the renamed wheel paths. In the run log, the wheel-content step must list six `stepss/libs/...` entries.
 
-- [ ] **R3** Real release: same workflow, source `manual`, **`publish` ticked**. Expected: version `3.57`, `master` fast-forwarded, tag `v3.57` and a GitHub release created, and the `stepss` project created on PyPI. The pending publisher converts to a normal one at this moment.
+- [ ] **R3** Real release: same workflow, source `manual`, **`publish` ticked**. Expected: version `3.58.1`, `master` fast-forwarded, tag `v3.58.1` and a GitHub release created, and the `stepss` project created on PyPI. The pending publisher converts to a normal one at this moment. Re-derive the expected number first if any upstream release landed since this plan was written.
 
 - [ ] **R4** Verify: `pip install stepss` in a clean venv, then `python -c "import stepss; print(stepss.__version__, stepss.__ramses_version__, stepss.__helios_version__)"`.
 
@@ -1150,7 +1165,7 @@ Run these in order, after Tasks 1-9 are merged to their default branches.
 
 - [ ] **R8** Confirm the drift check is clean: Actions, `bundled-drift-check.yml`, Run workflow. Expected: green with no issue filed. A failure here means it is still querying `pyramses` on PyPI.
 
-**If R3 fails at the PyPI step only:** nothing was uploaded, so version `3.57` is not spent. Fix the publisher registration (most likely a workflow-filename or environment-claim mismatch), then run `python-publish.yml` with tag `v3.57`. It uploads the gated wheel already attached to the release. Do not rebuild.
+**If R3 fails at the PyPI step only:** nothing was uploaded, so version `3.58.1` is not spent. Fix the publisher registration (most likely a workflow-filename or environment-claim mismatch), then run `python-publish.yml` with tag `v3.58.1`. It uploads the gated wheel already attached to the release. Do not rebuild.
 
 ---
 
