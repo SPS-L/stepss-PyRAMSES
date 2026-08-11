@@ -12,7 +12,7 @@
    :target: https://github.com/SPS-L/stepss-docs/
    :alt: Docs deploy status
 
-STEPSS: Python Interface to RAMSES and Helios
+stepss: Python Interface to RAMSES and Helios
 =============================================
 
 Scripted power system dynamic simulation and AC power-flow analysis from Python.

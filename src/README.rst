@@ -1,4 +1,4 @@
-STEPSS (Packaging Compatibility README)
+stepss (Packaging Compatibility README)
 =======================================
 
 The canonical project README is maintained at:

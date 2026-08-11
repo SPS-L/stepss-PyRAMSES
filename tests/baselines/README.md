@@ -12,7 +12,7 @@ step.
 
 ## Refresh policy
 
-Regenerate ONLY when a change legitimately alters trajectories, a model or
+Regenerate ONLY when a change legitimately alters trajectories: a model or
 solver change in RAMSES. In exactly that situation the gate is *supposed* to
 fail against the old baseline, and the fix is a deliberate baseline update in
 a reviewed pull request, never an automatic pass.

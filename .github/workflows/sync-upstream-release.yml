@@ -565,7 +565,7 @@ jobs:
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$HEAD_SHA" \
-            --title "STEPSS $TAG" \
+            --title "stepss $TAG" \
             --notes-file notes.md \
             dist/*
           echo "published=true" >> "$GITHUB_OUTPUT"
