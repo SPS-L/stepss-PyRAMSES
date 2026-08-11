@@ -1,0 +1,62 @@
+name: Publish compatibility shim
+
+# One-shot, by hand. The `pyramses` distribution is a forwarding shim onto
+# `stepss`: it is published once and never updated, so it deliberately has no
+# trigger tied to a release.
+#
+# It is a separate workflow from the release pipeline because the PyPI trusted
+# publisher on the `pyramses` project binds to this filename alone. Renaming
+# this file breaks that binding.
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Actually upload to PyPI (leave off to rehearse)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      # The forwarding test installs the real package and imports it. Import
+      # alone does not load ramses.so, but helios is touched, and a job that
+      # ends up loading either library without these fails at load time rather
+      # than at import. Cheap insurance; every CI job here installs them.
+      - name: Install the bundled libraries' system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libopenblas0 libgfortran5 libgomp1
+
+      - name: Build the shim
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip build
+          python -m build --sdist --wheel --outdir dist/ compat/pyramses
+          ls -l dist/
+
+      - name: Verify the shim forwards to stepss
+        run: bash tools/test_compat_shim.sh
+
+      # Read from github.event.inputs, which is a string, and compare against
+      # the quoted literal. The `inputs` context would give a boolean here, and
+      # an unquoted comparison coerces an unset value and fails *open*. Same
+      # reasoning as the rehearsal guard in sync-upstream-release.yml.
+      - name: Publish to PyPI
+        if: github.event.inputs.publish == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
