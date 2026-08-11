@@ -443,7 +443,9 @@ Keep the `Mark PyPI published` step and its `pypi_done` output exactly as they a
 
 - [ ] **Step 4: Switch `python-publish.yml` to OIDC**
 
-Update the `tag` input description (it says "pyramses release tag"), then the `deploy` job:
+This workflow also **matches the release's attached distributions by filename**, `pyramses-"$VERSION"-*`. That must become `stepss-"$VERSION"-*`, or every break-glass republish downloads a release and then matches nothing. Nothing tests this path until the day it is needed, which is the worst day to discover it.
+
+Update the `tag` input description (it says "pyramses release tag"), the wheel-filename match, then the `deploy` job:
 
 ```yaml
 jobs:
@@ -1171,7 +1173,14 @@ Run these in order, after Tasks 1-9 are merged to their default branches.
 
 - [ ] **R8** Confirm the drift check is clean: Actions, `bundled-drift-check.yml`, Run workflow. Expected: green with no issue filed. A failure here means it is still querying `pyramses` on PyPI.
 
+**Expect `bundled-drift-check.yml` to be red between now and R3.** It queries `https://pypi.org/pypi/stepss/json`, which 404s until the project exists, and `curl -f` then exits 1. This is not a regression introduced by the rename: the job is already failing beforehand, because its version parser demands three numeric parts and both `master` (`3.58`) and the published `pyramses` (`3.58`) have two. Both conditions clear the moment R3 publishes `3.58.1`. Do not "fix" it in the interim; just do not trust its silence, since a failed PyPI step also suppresses the upstream drift comparison that did succeed.
+
 **If R3 fails at the PyPI step only:** nothing was uploaded, so version `3.58.1` is not spent. Fix the publisher registration (most likely a workflow-filename or environment-claim mismatch), then run `python-publish.yml` with tag `v3.58.1`. It uploads the gated wheel already attached to the release. Do not rebuild.
+
+Two constraints on that break-glass path that did not exist before this change:
+
+- **Dispatch it from `master`.** The `pypi` environment restricts deployments to `master` (P0.3), so running it from any other branch now fails at the environment gate before it reaches PyPI.
+- **It can no longer republish a pre-rename release.** It matches assets as `stepss-"$VERSION"-*`, so any tag at or before `v3.58` (whose assets are `pyramses-*.whl`) will match nothing. That is correct, since those artifacts belong to a different PyPI project, but it means the old releases have no rescue path through this workflow. They do not need one.
 
 ---
 
