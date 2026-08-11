@@ -6,19 +6,27 @@ name: sync-upstream-release
 on:
   repository_dispatch:
     types: [ramses-release, helios-release]
-  # Rehearsal only. The release job is gated on repository_dispatch, so no
-  # amount of hand-triggering can move master, cut a release or reach PyPI.
+  # Rehearsal by default: with `publish` left off this runs fetch -> build ->
+  # gate and stops, reaching neither master nor PyPI. Ticking `publish` is the
+  # only way a hand-triggered run releases, and it is how a python-only change
+  # reaches PyPI: pick source `manual`, which touches neither upstream and just
+  # takes the next counter on the current RAMSES base.
   workflow_dispatch:
     inputs:
       source:
-        description: 'Upstream to rehearse against'
+        description: 'Upstream to sync, or "manual" for a python-only release'
         required: true
         type: choice
-        options: [ramses, helios]
+        options: [ramses, helios, manual]
       tag:
-        description: 'Upstream release tag, e.g. v3.55'
-        required: true
+        description: 'Upstream release tag, e.g. v3.55. Leave blank for manual.'
+        required: false
         type: string
+      publish:
+        description: 'Publish for real. Leave off to rehearse.'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -54,10 +62,12 @@ jobs:
           DISPATCH_TAG: ${{ github.event.client_payload.tag }}
           INPUT_SOURCE: ${{ inputs.source }}
           INPUT_TAG: ${{ inputs.tag }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
         run: |
           if [ "$EVENT" = "repository_dispatch" ]; then
             # The event type identifies the sender, so no 'source' field in
-            # the payload is ever trusted.
+            # the payload is ever trusted. `manual` is unreachable here: an
+            # upstream can only ever announce itself.
             case "$ACTION" in
               ramses-release) SOURCE=ramses ;;
               helios-release) SOURCE=helios ;;
@@ -68,7 +78,30 @@ jobs:
           else
             SOURCE="$INPUT_SOURCE"
             TAG="$INPUT_TAG"
-            REHEARSAL=true
+            # Quoted `!= 'true'` on purpose, matching the rest of this file: an
+            # unset or empty input must fail closed to a rehearsal, and an
+            # unquoted comparison would coerce the empty string and fail open.
+            if [ "$INPUT_PUBLISH" = "true" ]; then REHEARSAL=false; else REHEARSAL=true; fi
+          fi
+
+          if [ "$SOURCE" = "manual" ]; then
+            # A python-only release bundles whatever master already bundles, so
+            # there is no upstream tag to carry, validate or record.
+            if [ -n "$TAG" ]; then
+              echo "FAIL: source 'manual' takes no tag; got '$TAG'."
+              echo "A manual release republishes the upstreams master already bundles."
+              exit 1
+            fi
+            echo "source=$SOURCE"        >> "$GITHUB_OUTPUT"
+            echo "upstream_tag="         >> "$GITHUB_OUTPUT"
+            echo "rehearsal=$REHEARSAL"  >> "$GITHUB_OUTPUT"
+            echo "Manual python-only release (rehearsal=$REHEARSAL)"
+            exit 0
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "FAIL: source '$SOURCE' requires a tag."
+            exit 1
           fi
 
           # Validate the tag as a single whole string before anything is
@@ -147,6 +180,16 @@ jobs:
           FORCE: ${{ github.event.client_payload.force }}
         run: |
           BUNDLED="src/pyramses/_bundled.py"
+          if [ "$SOURCE" = "manual" ]; then
+            # Nothing to compare: a manual release changes no bundled version,
+            # so it can never be the repeat of an upstream announcement. Its
+            # protection against a double-publish is the version number itself,
+            # which takes the next free counter and is then checked against the
+            # existing tags and releases below.
+            echo "Manual release: the duplicate guard does not apply"
+            echo "duplicate=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ ! -f "$BUNDLED" ]; then
             echo "WARN: $BUNDLED not found, so nothing can be a duplicate of it"
             echo "duplicate=false" >> "$GITHUB_OUTPUT"
@@ -205,8 +248,12 @@ jobs:
         run: |
           if [ "$SOURCE" = "ramses" ]; then
             bash tools/update_ramses_libs.sh "$TAG"
-          else
+          elif [ "$SOURCE" = "helios" ]; then
             bash tools/update_helios_libs.sh "$TAG"
+          else
+            # manual: a python-only release ships the binaries master already
+            # has. Refreshing anything here would silently widen the change.
+            echo "Manual release: bundled libraries left untouched"
           fi
           git status --short src/pyramses/libs
 
@@ -217,7 +264,14 @@ jobs:
           SOURCE: ${{ steps.vars.outputs.source }}
           TAG: ${{ steps.vars.outputs.upstream_tag }}
         run: |
-          NEW="$(bash tools/bump_version.sh "$SOURCE" "$TAG")"
+          # The version is <bundled RAMSES version>[.<counter>], derived from
+          # the tags that already exist, so the checkout above must have them:
+          # it uses fetch-depth: 0.
+          if [ "$SOURCE" = "manual" ]; then
+            NEW="$(bash tools/bump_version.sh manual)"
+          else
+            NEW="$(bash tools/bump_version.sh "$SOURCE" "$TAG")"
+          fi
           echo "pyramses_tag=v$NEW" >> "$GITHUB_OUTPUT"
           echo "New pyramses version: $NEW"
           cat src/pyramses/_bundled.py
@@ -251,14 +305,20 @@ jobs:
           PYTAG: ${{ steps.bump.outputs.pyramses_tag }}
           REHEARSAL: ${{ steps.vars.outputs.rehearsal }}
         run: |
-          BRANCH="sync/$SOURCE-$TAG"
+          if [ "$SOURCE" = "manual" ]; then
+            BRANCH="sync/manual-$PYTAG"
+            MSG="Release $PYTAG"
+          else
+            BRANCH="sync/$SOURCE-$TAG"
+            MSG="Bundle $SOURCE $TAG and release $PYTAG"
+          fi
           BASE_SHA="$(git rev-parse HEAD)"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add -A src/pyramses/libs src/pyramses/_bundled.py src/pyramses/__init__.py
           git status --short
-          git commit -m "Bundle $SOURCE $TAG and release $PYTAG"
+          git commit -m "$MSG"
           if [ "$REHEARSAL" = "true" ]; then
             # A rehearsal leaves no branch behind. The build and gate jobs
             # check this commit out from the artifact-free local history via
@@ -414,13 +474,16 @@ jobs:
 
   release:
     needs: [fetch, build-wheel, nordic]
-    # Belt and braces: a workflow_dispatch rehearsal must never reach this
-    # job. Either of the first two conditions alone would do; both are cheap.
-    # The third stops a duplicate dispatch from spending a second PyPI
-    # version; build-wheel already skips, which would skip this job anyway.
+    # A rehearsal must never reach this job. `rehearsal` is now the single
+    # gate, because a hand-triggered run is allowed to publish when someone
+    # ticks `publish` -- that is the python-only release path. It is set to
+    # false in exactly two places: a repository_dispatch, and a
+    # workflow_dispatch whose publish input is the string 'true'. Anything
+    # else, including an unset input, leaves it 'true' and stops here.
+    # The second condition stops a duplicate dispatch from spending a second
+    # PyPI version; build-wheel already skips, which would skip this anyway.
     if: >-
-      github.event_name == 'repository_dispatch'
-      && needs.fetch.outputs.rehearsal == 'false'
+      needs.fetch.outputs.rehearsal == 'false'
       && needs.fetch.outputs.duplicate != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -474,9 +537,15 @@ jobs:
         run: |
           RAMSES_VER="$(sed -n 's/^RAMSES_VERSION = "\(.*\)"/\1/p' src/pyramses/_bundled.py)"
           HELIOS_VER="$(sed -n 's/^HELIOS_VERSION = "\(.*\)"/\1/p' src/pyramses/_bundled.py)"
+          if [ "$SOURCE" = "manual" ]; then
+            LEDE="Manual release of the python package. Neither bundled library changed;
+          the versions below are the ones this release inherits from the previous one."
+          else
+            LEDE="Automated release: **$SOURCE $UPSTREAM_TAG** was published upstream and the
+          bundled libraries were refreshed to match."
+          fi
           cat > notes.md <<EOF
-          Automated release: **$SOURCE $UPSTREAM_TAG** was published upstream and the
-          bundled libraries were refreshed to match.
+          $LEDE
 
           | Component | Version |
           | --- | --- |
@@ -527,9 +596,12 @@ jobs:
     # the release job's timeout expiring during the PyPI upload, produces no
     # failed job at all -- so a `failure()`-only condition reported nothing
     # about the single most dangerous moment in the pipeline.
+    # Keyed on rehearsal, not on the event: a publishing workflow_dispatch can
+    # fail mid-release exactly like a dispatch can, and that is the case this
+    # issue exists to report. A rehearsal that fails is just a failed test run.
     if: >-
       (failure() || cancelled())
-      && github.event_name == 'repository_dispatch'
+      && needs.fetch.outputs.rehearsal == 'false'
       && needs.fetch.outputs.duplicate != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -549,7 +621,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="$VALIDATED_TAG"
-          if [ -z "$TAG" ]; then
+          if [ "$SOURCE" = "manual" ]; then
+            # A manual release has no upstream tag by construction, so the
+            # fallback below would report "(unknown)" and read like a failure
+            # to parse one.
+            TAG="(none)"
+          elif [ -z "$TAG" ]; then
             # Validation itself is what failed, so the raw payload is still
             # untrusted free text: strip everything outside the tag charset
             # and clamp the length before it reaches a public issue.

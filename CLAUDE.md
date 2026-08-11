@@ -31,14 +31,46 @@ tools/update_ramses_libs.sh v3.55     # needs gh auth for SPS-L/stepss-ramses
 tools/update_helios_libs.sh v1.2.0    # needs gh auth for SPS-L/stepss-helios
 ```
 
+## Version numbers
+
+The version is `<bundled RAMSES version>[.<counter>]`, so its leading
+components always name the RAMSES shared library inside the wheel. Same rule
+and same algorithm as `next_version` in stepss-java-ui's `tools/ci/release.py`:
+
+| Trigger | Version |
+|---|---|
+| ramses publishes v3.57 | `3.57` |
+| helios publishes after that | `3.57.1` |
+| python-only release after that | `3.57.2` |
+| ramses publishes v3.58 | `3.58` |
+
+`tools/bump_version.sh` derives the counter from **the tags that already
+exist**, not from a stored number, so there is nothing to drift out of step: a
+RAMSES bump restarts the sequence by itself, because no tag on the new base
+exists yet, and re-running a failed release recomputes the same value. The
+checkout it runs under therefore needs the tags, hence `fetch-depth: 0`.
+
+The bare version goes to whichever release is *first* on a given RAMSES base,
+whatever triggered it; a helios release is `.1` only if a release on that base
+already happened.
+
+Versions up to and including `0.3.5` predate this scheme: they were a plain
+incrementing patch with no relation to the bundled RAMSES. `0.3.5` already
+bundles v3.57, so the first release under the new rule is `3.57`.
+
 ## Release automation
 
 Publishing a release in either upstream fires `repository_dispatch` at this
 repo (`ramses-release` / `helios-release`). The sync workflow then refreshes
-only that upstream's binaries, bumps the patch version, builds the wheel
+only that upstream's binaries, computes the version, builds the wheel
 **once**, and gates *that exact wheel* with the full pytest suite on
 `ubuntu-24.04`, `windows-latest` and `macos-15`. Only if all three pass does it
 fast-forward `master`, cut a release, and publish to PyPI.
+
+A **python-only release** takes the same path, triggered by hand:
+`workflow_dispatch` with source `manual` and `publish` ticked. It refreshes no
+binaries and changes no bundled version; it just takes the next counter on the
+current base and puts the package through the identical build-and-gate.
 
 Things that are easy to get wrong here:
 
@@ -48,12 +80,14 @@ Things that are easy to get wrong here:
   `python-publish.yml` (break-glass, `workflow_dispatch` with a tag input)
   uploads that file. It does **not** rebuild — rebuilding would ship bytes no
   gate ever saw.
-- **`workflow_dispatch` is rehearsal-only.** It runs fetch → build → gate and
-  stops; `release` requires `github.event_name == 'repository_dispatch'`. This
-  is how the pipeline is tested without publishing. Do not "simplify" that
-  guard: the `== 'false'` quoting on the rehearsal check is load-bearing, since
-  an unquoted comparison coerces an empty string to `false` and would fail
-  *open*.
+- **`workflow_dispatch` rehearses unless `publish` is ticked.** Left off, it
+  runs fetch → build → gate and stops, reaching neither `master` nor PyPI, which
+  is how the pipeline is tested. `release` is gated on
+  `needs.fetch.outputs.rehearsal == 'false'` alone, so ticking `publish` is what
+  makes a hand-triggered run real. Do not "simplify" that guard: the quoting on
+  the `'true'` / `'false'` string comparisons is load-bearing, since an
+  unquoted comparison coerces an empty input and would fail *open* — an
+  unset `publish` must land on rehearsal.
 - **A duplicate dispatch is skipped**, by comparing the incoming tag against
   `_bundled.py`. `client_payload[force]=true` bypasses that one guard and
   nothing else — for the case where a bundle was refreshed outside the
