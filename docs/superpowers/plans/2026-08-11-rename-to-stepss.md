@@ -1113,6 +1113,26 @@ grep -rl 'pyramses\|PyRAMSES' src/content/docs/ | xargs sed -i 's|/pyramses/|/py
 
 Then update `src/content/docs/resources/repositories.md` so the repository URL reads `https://github.com/SPS-L/stepss-python-ui`, and check `src/content/docs/python/installation.mdx` and `getting-started/installation.mdx` for `pip install` lines that must now say `stepss`.
 
+- [ ] **Step 4b: Close the inbound links from the package repo**
+
+Task 6 deliberately left `stepss.sps-lab.org/pyramses/*` links intact in `stepss-python-ui`'s `README.rst` and `src/README.rst`, because at that point the pages had not moved and rewriting them would have pointed at a URL that did not exist. This step is where they move, and it is the reason this dependency is closed here rather than tracked as a follow-up nobody owns. `README.rst` is the PyPI project page, so these are the links a new user actually clicks.
+
+In `/home/apetros/Code/stepss/stepss-python-ui` (a **different repository**, commit there separately):
+
+```bash
+cd /home/apetros/Code/stepss/stepss-python-ui
+sed -i 's|stepss.sps-lab.org/pyramses/|stepss.sps-lab.org/python/|g' README.rst src/README.rst
+grep -n 'sps-lab.org' README.rst src/README.rst
+```
+
+Read the grep output and confirm every URL resolves against the new structure. Note that `stepss.sps-lab.org/user-guide/pfc/` may also appear: leave it, it is a different redirect that already exists and still works.
+
+Then re-run the PyPI render gate, since `README.rst` is the project page:
+
+```bash
+python -m readme_renderer README.rst -o /dev/null
+```
+
 - [ ] **Step 5: Add a rename note to the Python overview page**
 
 At the end of `src/content/docs/python/overview.md`:
