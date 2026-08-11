@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Download the helios C API shared libraries from a stepss-helios GitHub
-# release and copy them into src/pyramses/libs/ for bundling.
+# release and copy them into src/stepss/libs/ for bundling.
 #
 # Usage: tools/update_helios_libs.sh <tag>        e.g. tools/update_helios_libs.sh v1.1.0
 #
 # Requires the GitHub CLI (gh) authenticated with access to SPS-L/stepss-helios.
 # Review and commit the updated binaries afterwards:
-#   git add src/pyramses/libs/ && git commit -m "Bundle helios <tag> libraries"
+#   git add src/stepss/libs/ && git commit -m "Bundle helios <tag> libraries"
 #
 # Note for macOS users downloading libraries manually through a browser
 # instead of this script: strip the quarantine attribute before use
@@ -17,7 +17,7 @@ set -euo pipefail
 
 TAG="${1:?usage: $0 <helios-release-tag> (e.g. v1.1.0)}"
 REPO="SPS-L/stepss-helios"
-LIBS_DIR="$(cd "$(dirname "$0")/.." && pwd)/src/pyramses/libs"
+LIBS_DIR="$(cd "$(dirname "$0")/.." && pwd)/src/stepss/libs"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -45,4 +45,4 @@ echo "Updated $LIBS_DIR:"
 ls -l "$LIBS_DIR" "$LIBS_DIR"/lin "$LIBS_DIR"/mac "$LIBS_DIR"/win | grep -i helios
 echo
 echo "Done. Review the changes and commit, e.g.:"
-echo "  git add src/pyramses/libs && git commit -m \"Bundle helios $TAG C API libraries\""
+echo "  git add src/stepss/libs && git commit -m \"Bundle helios $TAG C API libraries\""

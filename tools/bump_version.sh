@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compute the next pyramses version and record the bundled upstream versions.
+# Compute the next stepss version and record the bundled upstream versions.
 #
 #   bump_version.sh ramses <upstream-tag>
 #   bump_version.sh helios <upstream-tag>
@@ -19,11 +19,11 @@
 # no tag for the new base exists yet. Re-running a failed release recomputes the
 # same value, and a tag created by hand is taken into account for free.
 #
-# Rewrites src/pyramses/_bundled.py so the named upstream carries <upstream-tag>
+# Rewrites src/stepss/_bundled.py so the named upstream carries <upstream-tag>
 # and the other keeps whatever it had; `manual` changes neither. Prints the new
-# pyramses version (no 'v' prefix) on stdout; the release workflow reads that.
+# stepss version (no 'v' prefix) on stdout; the release workflow reads that.
 #
-# PYRAMSES_ROOT overrides the repository root, and PYRAMSES_TAGS overrides the
+# STEPSS_ROOT overrides the repository root, and STEPSS_TAGS overrides the
 # tag list (newline-separated), both for tests.
 set -u
 
@@ -41,9 +41,9 @@ case "$SOURCE" in
     *)             usage ;;
 esac
 
-ROOT="${PYRAMSES_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-INIT="$ROOT/src/pyramses/__init__.py"
-BUNDLED="$ROOT/src/pyramses/_bundled.py"
+ROOT="${STEPSS_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+INIT="$ROOT/src/stepss/__init__.py"
+BUNDLED="$ROOT/src/stepss/_bundled.py"
 
 [ -f "$INIT" ] || { echo "FAIL: not found: $INIT" >&2; exit 1; }
 
@@ -66,8 +66,8 @@ fi
 [ -n "$HELIOS_VER" ] || { echo "FAIL: no HELIOS_VERSION to carry forward" >&2; exit 1; }
 
 # The base is whatever RAMSES this wheel will bundle, after the update above.
-if [ -n "${PYRAMSES_TAGS+x}" ]; then
-    TAGS="$PYRAMSES_TAGS"
+if [ -n "${STEPSS_TAGS+x}" ]; then
+    TAGS="$STEPSS_TAGS"
 else
     TAGS="$(git -C "$ROOT" tag --list 2>/dev/null)" || TAGS=""
 fi
@@ -86,7 +86,7 @@ counters = [
     if m
 ]
 
-# The bare version is simply the first pyramses release on this RAMSES base,
+# The bare version is simply the first stepss release on this RAMSES base,
 # whatever triggered it; every later one on the same base takes a counter.
 if ("v" + base) not in tags and not counters:
     print(base)
@@ -115,14 +115,14 @@ REWRITE_RC=$?
 [ "$REWRITE_RC" -eq 0 ] || exit 1
 
 cat > "$BUNDLED" <<EOF
-"""Upstream component versions bundled in this pyramses release.
+"""Upstream component versions bundled in this stepss release.
 
 Written by tools/bump_version.sh, which the release automation invokes when
 stepss-ramses or stepss-helios publishes, and on a manual python-only release.
 Do not edit by hand: a manual edit is silently overwritten by the next sync.
 
 Only the upstream that triggered a sync changes; the other is carried forward.
-RAMSES_VERSION is also what the pyramses version number is built from, so the
+RAMSES_VERSION is also what the stepss version number is built from, so the
 leading components of __version__ always name the library bundled here.
 """
 

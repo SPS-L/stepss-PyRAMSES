@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Download the RAMSES shared libraries from a stepss-ramses GitHub release and
-# copy them into src/pyramses/libs/ for bundling.
+# copy them into src/stepss/libs/ for bundling.
 #
 # Usage: tools/update_ramses_libs.sh <tag>        e.g. tools/update_ramses_libs.sh v3.55
 #
 # Requires the GitHub CLI (gh) authenticated with access to SPS-L/stepss-ramses.
 # Review and commit the updated binaries afterwards:
-#   git add src/pyramses/libs/ && git commit -m "Bundle RAMSES <tag> libraries"
+#   git add src/stepss/libs/ && git commit -m "Bundle RAMSES <tag> libraries"
 #
 # Companion to tools/update_helios_libs.sh; the release automation calls both.
 #
-# PYRAMSES_LIBS_DIR overrides the destination, for tests.
+# STEPSS_LIBS_DIR overrides the destination, for tests.
 set -euo pipefail
 
 if [ $# -ne 1 ]; then
@@ -19,7 +19,7 @@ if [ $# -ne 1 ]; then
 fi
 TAG="$1"
 REPO="SPS-L/stepss-ramses"
-LIBS_DIR="${PYRAMSES_LIBS_DIR:-$(cd "$(dirname "$0")/.." && pwd)/src/pyramses/libs}"
+LIBS_DIR="${STEPSS_LIBS_DIR:-$(cd "$(dirname "$0")/.." && pwd)/src/stepss/libs}"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -38,7 +38,7 @@ done
 
 install -m 644 "$WORK_DIR/linux/ramses.so"      "$LIBS_DIR/lin/ramses.so"
 install -m 644 "$WORK_DIR/windows/ramses.dll"   "$LIBS_DIR/win/ramses.dll"
-# macOS keeps the .so name: pyramses separates platforms by directory.
+# macOS keeps the .so name: stepss separates platforms by directory.
 install -m 644 "$WORK_DIR/macos-arm64/ramses.so" "$LIBS_DIR/mac/ramses.so"
 
 echo
@@ -46,4 +46,4 @@ echo "Updated $LIBS_DIR:"
 ls -l "$LIBS_DIR"/lin "$LIBS_DIR"/win "$LIBS_DIR"/mac | grep -i ramses || true
 echo
 echo "Done. Review the changes and commit, e.g.:"
-echo "  git add src/pyramses/libs && git commit -m \"Bundle RAMSES $TAG libraries\""
+echo "  git add src/stepss/libs && git commit -m \"Bundle RAMSES $TAG libraries\""

@@ -48,7 +48,7 @@ chmod +x "$FAKEBIN/gh"
 [ $? -eq 2 ] && ok "no args exits 2" || fail "no args should exit 2"
 
 # --- happy path ----------------------------------------------------------
-PATH="$FAKEBIN:$PATH" PYRAMSES_LIBS_DIR="$TMPD/libs" "$SCRIPT" v9.99 >"$TMPD/out.log" 2>&1
+PATH="$FAKEBIN:$PATH" STEPSS_LIBS_DIR="$TMPD/libs" "$SCRIPT" v9.99 >"$TMPD/out.log" 2>&1
 rc=$?
 [ $rc -eq 0 ] && ok "happy path exits 0" || { fail "happy path exited $rc"; cat "$TMPD/out.log"; }
 
@@ -56,7 +56,7 @@ grep -q 'LINUX-SO-PAYLOAD'   "$TMPD/libs/lin/ramses.so"  && ok "lin/ramses.so in
 grep -q 'WINDOWS-DLL-PAYLOAD' "$TMPD/libs/win/ramses.dll" && ok "win/ramses.dll installed" || fail "win/ramses.dll wrong or missing"
 grep -q 'MACOS-SO-PAYLOAD'   "$TMPD/libs/mac/ramses.so"  && ok "mac/ramses.so installed"  || fail "mac/ramses.so wrong or missing"
 
-# macOS must be a .so, never a .dylib: pyramses splits platforms by directory.
+# macOS must be a .so, never a .dylib: stepss splits platforms by directory.
 [ ! -e "$TMPD/libs/mac/ramses.dylib" ] && ok "no stray mac/ramses.dylib" || fail "mac kit wrote a .dylib"
 
 # The Linux and macOS archives share the member name ramses.so; a flat
@@ -69,7 +69,7 @@ fi
 
 # --- a missing asset must fail loudly ------------------------------------
 rm -f "$TMPD/pyramses-libs-windows-v9.99.zip"
-PATH="$FAKEBIN:$PATH" PYRAMSES_LIBS_DIR="$TMPD/libs" "$SCRIPT" v9.99 >/dev/null 2>&1
+PATH="$FAKEBIN:$PATH" STEPSS_LIBS_DIR="$TMPD/libs" "$SCRIPT" v9.99 >/dev/null 2>&1
 [ $? -ne 0 ] && ok "missing asset exits non-zero" || fail "missing asset should fail"
 
 echo ""
