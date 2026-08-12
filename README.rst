@@ -24,7 +24,7 @@ STEPSS is delivered in two editions, which drive the same simulation engines and
 - **STEPSS for Python**, this package. ``pip install stepss``, then script simulations from Python or a Jupyter notebook.
 - **STEPSS for Java**, a desktop application. A single ``stepss.jar`` with a graphical interface, published on the `releases page <https://github.com/SPS-L/stepss-java-ui/releases>`_.
 
-Neither is a wrapper around the other: they are two front ends onto the same Fortran engines, and a case built in one runs unchanged in the other. Pick this one to automate, sweep parameters, or work inside the scientific Python stack; pick the Java edition for interactive work, or for the model-building and curve-viewing tools it carries that this edition does not (see `Choosing an edition`_).
+Neither is a wrapper around the other: they are two front ends onto the same Fortran engines, and a case built in one runs unchanged in the other. Pick this one to automate, sweep parameters, or work inside the scientific Python stack; pick the Java edition for interactive point-and-click work, or to build your own models with CODEGEN (see `Choosing an edition`_).
 
 What this edition bundles
 -------------------------
@@ -39,10 +39,11 @@ Pre-compiled shared libraries for Linux, Windows and macOS ship inside the wheel
 Choosing an edition
 -------------------
 
-Two capabilities live only in the Java edition, because they are separate executables rather than libraries:
+One capability lives only in the Java edition:
 
-- **CODEGEN**, which translates user-written model descriptions into Fortran 2003 and compiles them into a custom simulator. Writing your own exciter, governor or injector needs the Java edition or the `CODEGEN toolchain <https://stepss.sps-lab.org/developer/user-models/>`_ directly.
-- **DYNGRAPH**, the interactive trajectory viewer. This edition reads trajectories into NumPy instead, which is usually what you want from Python.
+- **CODEGEN**, which translates user-written model descriptions into Fortran 2003 and compiles them into a custom simulator. Writing your own exciter, governor or injector needs the Java edition, or the `CODEGEN toolchain <https://stepss.sps-lab.org/developer/user-models/>`_ directly.
+
+**Trajectory viewing exists in both editions**, by different means. The Java edition launches DYNGRAPH, a separate viewer executable. This edition carries its own equivalent, written in Python on top of Matplotlib: ``extractor`` reads a ``.trj`` file into NumPy arrays, and ``curplot`` or a curve's own ``.plot()`` draws them. The results stay in the process as ordinary arrays, so they can be sliced, compared across runs, or handed to any other Python library, and plotting is a method call rather than a separate program.
 
 Everything else, running dynamic simulations and power flows against the same engines and data files, is available here.
 
