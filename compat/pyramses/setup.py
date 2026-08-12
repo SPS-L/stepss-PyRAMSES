@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Build script for the retired `pyramses` distribution.
+"""Build script for the decommissioned `pyramses` distribution.
 
 This is a tombstone, not a package. `pyramses` was renamed to `stepss`, and
 installing this distribution fails on purpose with a message naming the
 replacement, so that anyone who reaches for the old name is sent to the right
 one rather than quietly receiving something that no longer tracks the engine.
+
+It also holds the name. PyPI releases a deleted project's name for anyone to
+register, and `pyramses` has real installs behind it in notebooks and papers,
+so leaving the name unclaimed would let a third party publish anything under
+it to those users.
 
 How the refusal works, and why it is shaped this way:
 
@@ -21,6 +26,23 @@ How the refusal works, and why it is shaped this way:
 
 This is the same mechanism the `sklearn` tombstone uses to redirect to
 `scikit-learn`.
+
+There is exactly one release, and there must never be another. PyPI cannot
+host a project with no files: one with none behaves like a deleted project, so
+`pip install pyramses` would fail with a bare resolver error and say nothing.
+This single release exists only to carry the notice.
+
+The version is 3.58.3 for reach, not for continuity. It sits above the last
+real release, 3.58, so a range pin such as `pyramses>=3.5` still resolves here
+and the installer reads the notice, where a low version would be reached only
+by a bare `pip install pyramses`. 3.58.1 and 3.58.2 can never be reused: the
+project was deleted from PyPI, and a deleted filename is permanently burned
+even after the project is recreated. Exact pins on withdrawn releases cannot
+resolve at all, for the same reason.
+
+Archive the project on PyPI once this is published. Archiving keeps it
+installable and resolvable while blocking further releases, which is what
+holds the name and keeps the notice from being replaced.
 """
 
 import os
@@ -30,11 +52,12 @@ from setuptools import setup
 
 MESSAGE = """
 ***************************************************************************
-pyramses is retired. Install stepss instead:
+This package has been decommissioned. Install stepss instead:
 
     pip install stepss
 
-Then change `import pyramses` to `import stepss`. The API is unchanged:
+stepss is this package under its current name, and the only one that tracks
+the RAMSES and Helios engines. Change `import pyramses` to `import stepss`:
 cfg, sim, extractor, curplot and HeliosSession keep their names, and
 `from pyramses.globals import X` becomes `from stepss.globals import X`.
 
@@ -54,8 +77,8 @@ def read(name):
 
 setup(
     name='pyramses',
-    version='3.58.2',
-    description='pyramses is retired: install stepss instead.',
+    version='3.58.3',
+    description='This package has been decommissioned: install stepss instead.',
     long_description=read('README.rst'),
     long_description_content_type='text/x-rst',
     author='Petros Aristidou',

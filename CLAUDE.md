@@ -196,15 +196,42 @@ working well enough that nothing moved off it.
 - **`pyramses/__init__.py` raises on import** for the one case the install
   refusal cannot cover: an environment that already has an older `pyramses` and
   upgrades it in place.
-- **PyPI files are immutable, so any change is a new version.** Bump `version=`
-  in `compat/pyramses/setup.py`, never re-upload. 3.58.1 was the shim, 3.58.2 is
-  the tombstone.
+- **There is exactly one release, and there must never be another.** PyPI cannot
+  host a project with no files: one with none behaves like a deleted project, so
+  `pip install pyramses` would fail with a bare resolver error and say nothing.
+  The single release exists only to carry the notice. `3.58.3` sits above the
+  last real release so range pins such as `pyramses>=3.5` resolve to it and read
+  the notice; a low version would be reached only by a bare install.
+- **`3.58`, `3.58.1` and `3.58.2` are burned.** The project was deleted from
+  PyPI, and a deleted filename can never be re-uploaded even after the project
+  is recreated. Never reuse those numbers.
+- **Archive the project on PyPI after publishing.** Archiving keeps it
+  installable and resolvable while blocking further releases, which holds the
+  name and keeps the notice from being replaced. Deleting instead releases the
+  name for anyone to register, which is how this project came to need
+  reclaiming.
 - `tools/test_compat_shim.sh` is the only thing that checks any of this, and no
   routine CI job runs it: it runs inside `publish-compat-shim.yml`. Run it by
   hand after touching the tombstone.
 - **Do not rename `publish-compat-shim.yml`.** The PyPI trusted publisher on the
   `pyramses` project binds to that filename alone. The name is stale, describing
   a shim that no longer exists, and stays that way for exactly that reason.
+
+## Trusted publishers bind to a workflow filename
+
+A PyPI trusted publisher matches on (repository, **workflow filename**,
+environment), so every workflow that uploads needs its own publisher entry on
+the project. A *pending* publisher is the variant for a project PyPI has never
+seen: the first upload through that exact publisher registers the project and
+promotes the entry. It can only ever be promoted once.
+
+The trap that already bit: `stepss` was registered by the upload in
+`sync-upstream-release.yml`, so a pending publisher naming `python-publish.yml`
+stayed pending forever and `python-publish.yml` was left with no usable
+publisher at all. That workflow is the break-glass path for a failed upload, so
+the failure would only surface at the moment it was needed. Once a project
+exists, add publishers under the project's own publishing settings; a pending
+entry will not attach to it.
 
 ## Cross-repo names move in lockstep
 

@@ -41,7 +41,7 @@ set -e
 [ "$RC" -ne 0 ] || { echo "FAIL: installing the tombstone succeeded" >&2; exit 1; }
 echo "ok: install refused (exit $RC)"
 
-grep -q "pyramses is retired" <<<"$OUT" || {
+grep -q "has been decommissioned" <<<"$OUT" || {
     echo "FAIL: refusal did not explain itself" >&2; echo "$OUT" >&2; exit 1; }
 grep -q "pip install stepss" <<<"$OUT" || {
     echo "FAIL: refusal did not name the replacement" >&2; echo "$OUT" >&2; exit 1; }
