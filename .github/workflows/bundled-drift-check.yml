@@ -108,38 +108,47 @@ jobs:
           [ -n "$REPO_VERSION" ] || { echo "FAIL: __version__ not found in $INIT"; exit 1; }
 
           # An unreachable or misbehaving PyPI must never read as "no drift",
-          # which is the whole failure mode this step exists to prevent. `curl
-          # -f` turns an HTTP error status into a non-zero exit, and every
+          # which is the whole failure mode this step exists to prevent. Every
           # unexpected shape below is an explicit hard failure, so the run goes
           # red rather than quietly reporting OK.
-          if ! curl -fsS --retry 3 --retry-delay 5 --max-time 60 \
-                 -o pypi.json https://pypi.org/pypi/stepss/json; then
-            echo "FAIL: could not query https://pypi.org/pypi/stepss/json"
+          #
+          # 404 is the one status that is not a malfunction: it is the honest
+          # answer while the project has never been published, which is the
+          # state between the rename and the first `stepss` release. Treating
+          # it as an error would hold this check red for a condition it cannot
+          # act on. The status is read explicitly, rather than with `curl -f`,
+          # precisely so 404 can be told apart from every other failure.
+          HTTP="$(curl -sS --retry 3 --retry-delay 5 --max-time 60 \
+                    -o pypi.json -w '%{http_code}' \
+                    https://pypi.org/pypi/stepss/json)" || HTTP=000
+
+          if [ "$HTTP" = "404" ]; then
+            echo "SKIP: stepss is not published on PyPI yet, so there is nothing to compare against."
+            echo "master is at $REPO_VERSION."
+            echo "drift=false"                  >> "$GITHUB_OUTPUT"
+            echo "repo_version=$REPO_VERSION"   >> "$GITHUB_OUTPUT"
+            echo "pypi_version=unpublished"     >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$HTTP" != "200" ]; then
+            echo "FAIL: querying https://pypi.org/pypi/stepss/json returned HTTP $HTTP"
             exit 1
           fi
+
           PYPI_VERSION="$(jq -r '.info.version // empty' pypi.json)"
           [ -n "$PYPI_VERSION" ] || { echo "FAIL: no .info.version in the PyPI response"; exit 1; }
 
           echo "stepss: master=$REPO_VERSION pypi=$PYPI_VERSION"
 
-          # Numeric major.minor.patch compare. bump_version.sh enforces exactly
-          # that shape, so anything else is a corrupted state, not a version to
-          # guess at.
-          REL="$(python3 - "$REPO_VERSION" "$PYPI_VERSION" <<'PYEOF'
-          import sys
-
-          def parse(label, value):
-              parts = value.split('.')
-              if len(parts) != 3 or not all(p.isdigit() for p in parts):
-                  sys.exit('FAIL: %s version %r is not major.minor.patch with numeric parts'
-                           % (label, value))
-              return tuple(int(p) for p in parts)
-
-          repo = parse('master', sys.argv[1])
-          pypi = parse('PyPI', sys.argv[2])
-          print('ahead' if repo > pypi else 'level' if repo == pypi else 'behind')
-          PYEOF
-          )"
+          # The comparison lives in tools/compare_versions.py, with a test
+          # beside it. It used to be inlined here, demanding exactly three
+          # numeric components on the strength of a comment claiming
+          # bump_version.sh enforced that shape. It stopped doing so when the
+          # scheme became <ramses-version>[.<counter>], and because nothing
+          # tested this workflow the mismatch went unnoticed until the first
+          # bare release (3.58) turned the scheduled run red.
+          REL="$(python3 tools/compare_versions.py "$REPO_VERSION" "$PYPI_VERSION")"
 
           # Only "master ahead" is the missing-upload signal. PyPI ahead of
           # master is not something this automation can produce and is a

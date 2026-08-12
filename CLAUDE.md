@@ -131,7 +131,19 @@ convention `stepss-uramses` uses). Run them after any change:
 ```sh
 bash tools/test_bump_version.sh
 bash tools/test_update_ramses_libs.sh
+bash tools/test_compare_versions.sh
+bash tools/test_compat_shim.sh
 ```
+
+**Logic that a workflow depends on belongs in `tools/`, not in a heredoc.**
+`bundled-drift-check.yml` used to compare versions with an inlined Python
+snippet that required exactly three numeric components, justified by a comment
+claiming `bump_version.sh` enforced that shape. When the scheme changed to
+`<ramses-version>[.<counter>]`, the commit updated `bump_version.sh`, its
+tests, the sync workflow and this file, but not that snippet. Nothing tested
+it, so the mismatch stayed invisible until the first bare release (`3.58`)
+turned the scheduled run red. It now lives in `tools/compare_versions.py` with
+a test beside it, which is the only reason that class of drift is catchable.
 
 ## Bundled binaries have system dependencies
 
