@@ -244,7 +244,7 @@ jobs:
         env:
           SOURCE: ${{ steps.vars.outputs.source }}
           TAG: ${{ steps.vars.outputs.upstream_tag }}
-          GH_TOKEN: ${{ secrets.RAMSES_READ_TOKEN }}
+          GH_TOKEN: ${{ secrets.STEPSS_TOKEN }}
         run: |
           if [ "$SOURCE" = "ramses" ]; then
             bash tools/update_ramses_libs.sh "$TAG"

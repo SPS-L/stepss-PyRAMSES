@@ -5,7 +5,7 @@ name: bundled-drift-check
 # dispatches while a sync is still running, the queued run is superseded and
 # cancelled *before it gets a runner* -- zero jobs execute -- so nothing
 # inside that workflow ever has a chance to report the loss. A failed run,
-# an expired RAMSES_READ_TOKEN, or an upstream that never dispatched at all
+# an expired STEPSS_TOKEN, or an upstream that never dispatched at all
 # are silent the same way. This workflow catches all of those causes at
 # once, on a schedule, by comparing what master actually bundles against
 # what each upstream has actually released, independent of how a sync might
@@ -53,7 +53,7 @@ jobs:
       - name: Compare against upstream latest
         id: compare
         env:
-          GH_TOKEN: ${{ secrets.RAMSES_READ_TOKEN }}
+          GH_TOKEN: ${{ secrets.STEPSS_TOKEN }}
           RAMSES_BUNDLED: ${{ steps.bundled.outputs.ramses }}
           HELIOS_BUNDLED: ${{ steps.bundled.outputs.helios }}
         run: |
