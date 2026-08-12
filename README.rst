@@ -12,16 +12,39 @@
    :target: https://github.com/SPS-L/stepss-docs/
    :alt: Docs deploy status
 
-stepss: Python Interface to RAMSES and Helios
-=============================================
+STEPSS for Python
+=================
 
-Scripted power system dynamic simulation and AC power-flow analysis from Python.
+Scripted power system dynamic simulation and AC power-flow analysis.
 
-stepss is a Python interface to the `RAMSES <https://stepss.sps-lab.org/getting-started/overview/>`_ dynamic simulator - part of the `STEPSS <https://stepss.sps-lab.org/>`_ power system simulation platform. It covers the full simulation workflow: defining test cases, launching simulations, querying system state at runtime, and extracting and plotting results.
+**STEPSS** (*Static and Transient Electric Power Systems Simulation*) is a power system simulation platform for dynamic studies of electrical grids, developed by `Dr. Petros Aristidou <https://sps-lab.org>`_ (Cyprus University of Technology) and Dr. Thierry Van Cutsem (University of Liège).
 
-stepss enables scripted power system dynamic simulations from Python or Jupyter notebooks. It exposes the full capability of the RAMSES solver through a clean Python API, with pre-compiled binaries bundled - no separate solver installation required. The package also bundles the `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_ AC power-flow engine (see `Helios Power-Flow Interface`_ below).
+STEPSS is delivered in two editions, which drive the same simulation engines and read the same data files:
 
-RAMSES (RApid Multithreaded Simulation of Electric power Systems) simulates the dynamic evolution of power systems under the phasor approximation, using Backward Euler, Trapezoidal, or BDF2 integration with OpenMP parallelism.
+- **STEPSS for Python**, this package. ``pip install stepss``, then script simulations from Python or a Jupyter notebook.
+- **STEPSS for Java**, a desktop application. A single ``stepss.jar`` with a graphical interface, published on the `releases page <https://github.com/SPS-L/stepss-java-ui/releases>`_.
+
+Neither is a wrapper around the other: they are two front ends onto the same Fortran engines, and a case built in one runs unchanged in the other. Pick this one to automate, sweep parameters, or work inside the scientific Python stack; pick the Java edition for interactive work, or for the model-building and curve-viewing tools it carries that this edition does not (see `Choosing an edition`_).
+
+What this edition bundles
+-------------------------
+
+``pip install stepss`` is self-contained: no separate solver installation, no compiler, no licence server.
+
+- `RAMSES <https://stepss.sps-lab.org/getting-started/overview/>`_ (RApid Multithreaded Simulation of Electric power Systems), the dynamic simulator. It simulates the evolution of a power system under the phasor approximation, using Backward Euler, Trapezoidal or BDF2 integration with OpenMP parallelism.
+- `Helios <https://stepss.sps-lab.org/user-guide/power-flow/>`_, the AC power-flow engine, solving by Newton-Raphson in polar coordinates. Exposed through the ``stepss.helios`` module (see `Helios Power-Flow Interface`_ below).
+
+Pre-compiled shared libraries for Linux, Windows and macOS ship inside the wheel.
+
+Choosing an edition
+-------------------
+
+Two capabilities live only in the Java edition, because they are separate executables rather than libraries:
+
+- **CODEGEN**, which translates user-written model descriptions into Fortran 2003 and compiles them into a custom simulator. Writing your own exciter, governor or injector needs the Java edition or the `CODEGEN toolchain <https://stepss.sps-lab.org/developer/user-models/>`_ directly.
+- **DYNGRAPH**, the interactive trajectory viewer. This edition reads trajectories into NumPy instead, which is usually what you want from Python.
+
+Everything else, running dynamic simulations and power flows against the same engines and data files, is available here.
 
 Key Features
 ------------
@@ -31,8 +54,8 @@ Key Features
 - **Trajectory post-processing** - extract and plot time-series results from Fortran binary trajectory files
 - **Parameter sweeps** - script multiple simulations with varying parameters or disturbances
 - **Eigenanalysis support** - export system Jacobian matrices for small-signal stability analysis
-- **Bundled binaries** - pre-compiled RAMSES shared libraries (``ramses.dll`` / ``ramses.so``) for Windows, Linux, and macOS, plus Helios power-flow libraries for Windows, Linux, and macOS
 - **AC power flow** - the ``stepss.helios`` module runs Helios power flows: solve, modify with redispatch, N-1 contingency screening, and file exports
+- **Shared data files** - the same ``.dat``, ``.dst`` and ``.obs`` files run in the Java edition, so a case can move between the two
 - **Scientific Python integration** - works natively with NumPy, SciPy, Matplotlib, and Jupyter
 
 Installation
@@ -146,7 +169,7 @@ For interactive usage, pause/continue and on-the-fly disturbance injection is su
 Helios Power-Flow Interface
 ---------------------------
 
-stepss also bundles `Helios <https://stepss.sps-lab.org/user-guide/pfc/>`_, the STEPSS AC power-flow engine (successor of the Fortran PFC), exposed through the ``stepss.helios`` module. Unlike the RAMSES classes, this interface uses PEP 8 snake_case naming. Pre-compiled libraries are bundled for Linux, Windows, and macOS.
+`Helios <https://stepss.sps-lab.org/user-guide/power-flow/>`_ is the AC power-flow engine both editions use, exposed here through the ``stepss.helios`` module. Unlike the RAMSES classes, this interface uses PEP 8 snake_case naming.
 
 .. code-block:: python
 
