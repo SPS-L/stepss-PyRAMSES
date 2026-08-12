@@ -1,8 +1,10 @@
 name: Publish compatibility shim
 
-# One-shot, by hand. The `pyramses` distribution is a forwarding shim onto
-# `stepss`: it is published once and never updated, so it deliberately has no
-# trigger tied to a release.
+# By hand, and rarely. The `pyramses` distribution is a forwarding shim onto
+# `stepss`: it mirrors whatever `stepss` exposes at import time, so it does not
+# need republishing when `stepss` releases and deliberately has no trigger tied
+# to one. Run this only to correct the shim itself, and bump `version=` in
+# compat/pyramses/setup.py first, because PyPI files are immutable.
 #
 # It is a separate workflow from the release pipeline because the PyPI trusted
 # publisher on the `pyramses` project binds to this filename alone. Renaming

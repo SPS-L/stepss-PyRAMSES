@@ -25,14 +25,14 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 echo "Downloading RAMSES $TAG libraries from $REPO ..."
 gh release download "$TAG" --repo "$REPO" \
-    --pattern "pyramses-libs-*-$TAG.zip" --dir "$WORK_DIR"
+    --pattern "ramses-libs-*-$TAG.zip" --dir "$WORK_DIR"
 
 # The Linux and macOS archives both contain a member named ramses.so, so each
 # is unzipped into its own directory rather than a shared one. A flat
 # extraction would silently leave one platform holding the other's library.
 for plat in linux windows macos-arm64; do
-    zip="$WORK_DIR/pyramses-libs-$plat-$TAG.zip"
-    [ -f "$zip" ] || { echo "FAIL: RAMSES $TAG has no pyramses-libs-$plat-$TAG.zip" >&2; exit 1; }
+    zip="$WORK_DIR/ramses-libs-$plat-$TAG.zip"
+    [ -f "$zip" ] || { echo "FAIL: RAMSES $TAG has no ramses-libs-$plat-$TAG.zip" >&2; exit 1; }
     unzip -q "$zip" -d "$WORK_DIR/$plat"
 done
 

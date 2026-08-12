@@ -3,7 +3,13 @@
 """Build script for the pyramses compatibility shim.
 
 Deliberately standalone: it shares no code with src/setup.py, because this
-distribution is published exactly once and must not drift with the real one.
+distribution is published on its own schedule and must not drift with the
+real one.
+
+Version history: 3.58.1 was the first shim; 3.58.2 corrects its forwarding,
+which reached only the names in ``stepss.__all__`` and so lost the documented
+package-level attributes. PyPI files are immutable, so any fix to the shim is
+a new version, never a re-upload.
 """
 
 import os
@@ -18,7 +24,7 @@ def read(name):
 
 setup(
     name='pyramses',
-    version='3.58.1',
+    version='3.58.2',
     description='Compatibility shim: pyramses is now stepss.',
     long_description=read('README.rst'),
     long_description_content_type='text/x-rst',
@@ -27,7 +33,7 @@ setup(
     url='https://stepss.sps-lab.org',
     license='Apache-2.0',
     packages=['pyramses'],
-    install_requires=['stepss>=3.58.1'],
+    install_requires=['stepss>=3.59'],
     classifiers=[
         "Development Status :: 7 - Inactive",
         "Intended Audience :: Developers",

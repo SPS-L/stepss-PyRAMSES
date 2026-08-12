@@ -74,13 +74,6 @@ Minimal installation (no plotting or notebook support)::
 
 **Optional:** Install `Gnuplot <http://www.gnuplot.info/>`_ to enable real-time observable plots during simulation. stepss will still work without it, but runtime plots will be disabled.
 
-Renamed from PyRAMSES
-~~~~~~~~~~~~~~~~~~~~~
-
-This package was published as ``pyramses`` up to version 3.58. Existing code
-keeps working: ``pip install pyramses`` now installs a shim that forwards to
-this package. New code should use ``import stepss``.
-
 Linux System Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

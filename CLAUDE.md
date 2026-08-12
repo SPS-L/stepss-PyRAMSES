@@ -56,7 +56,14 @@ already happened.
 
 Versions up to and including `0.3.5` predate this scheme: they were a plain
 incrementing patch with no relation to the bundled RAMSES. `0.3.5` already
-bundles v3.57, so the first release under the new rule is `3.57`.
+bundled v3.57, and no release was cut on that base afterwards, so the scheme
+opens at `3.58`.
+
+**The `stepss` distribution on PyPI starts at `3.59`**: every earlier version
+was published under the retired name, so nothing below `3.59` is installable as
+`stepss`. Check that before writing a pin or an install command, here, in
+`README.rst` or on the docs site. The docs site published `pip install
+"stepss~=3.58.0"` for a while, which resolves to nothing.
 
 ## Release automation
 
@@ -165,6 +172,45 @@ why the Helios tests passed for a long time before any test exercised RAMSES.
   it starts with `@`, and git permits a tag named `@evil`.
 - The RAMSES API is camelCase (`addData`, `execSim`); `stepss.helios` is
   deliberately PEP 8 snake_case.
-- The `pyramses` distribution is a frozen forwarding shim in `compat/pyramses/`,
-  published once by `publish-compat-shim.yml`. Do not release it again, and do
-  not rename that workflow file: the PyPI trusted publisher binds to it.
+- The `pyramses` distribution is a forwarding shim in `compat/pyramses/`,
+  published by `publish-compat-shim.yml`. Do not rename that workflow file: the
+  PyPI trusted publisher binds to it. See below before touching the shim.
+
+## The pyramses compatibility shim
+
+`compat/pyramses/` is the whole of the old `pyramses` distribution: it declares
+a dependency on `stepss` and re-exports it, so `import pyramses` keeps working
+and keeps delivering the current engine. It is published rarely and does not
+track `stepss` releases, which only works because it forwards *dynamically*.
+
+- **It forwards by mirroring `vars(stepss)`, not by listing names.** 3.58.1
+  shipped with `from stepss import *` as its only forwarding, which binds just
+  the names in `stepss.__all__`. Every documented package-level attribute
+  (`__ramses_version__`, `__helios_version__`, `__runTimeObs__`, `__url__`)
+  therefore raised `AttributeError` through the shim while working fine on
+  pyramses 3.58. 3.58.2 replaced the list with the mirror. Do not "tidy" it back
+  into an explicit list: a list in a distribution that is not republished can
+  only go stale again.
+- **Bind `globals()` to a local before that mirror loop.** `stepss` has a
+  submodule named `globals`, so the iteration that copies it shadows the
+  builtin, and the next call raises `TypeError: 'module' object is not
+  callable`.
+- **Attribute mirroring is not submodule aliasing.** `from pyramses.globals
+  import RAMSESError` and `from pyramses.scripts.exec import run` resolve only
+  because the shim writes `sys.modules` entries. Adding a subpackage to `stepss`
+  that old code imported by path means adding it to that loop.
+- **PyPI files are immutable, so any shim fix is a new version.** Bump
+  `version=` in `compat/pyramses/setup.py`, never re-upload.
+- `tools/test_compat_shim.sh` is the only thing that checks any of this, and no
+  routine CI job runs it: it runs inside `publish-compat-shim.yml`. Run it by
+  hand after touching either the shim or `stepss`'s public surface.
+
+## Cross-repo names move in lockstep
+
+`tools/update_ramses_libs.sh` hard-fails unless every expected RAMSES asset
+name is present in the release it is pointed at, and the upstreams dispatch
+here under a named secret. Both are contracts with `stepss-ramses` and
+`stepss-helios`: renaming either side alone breaks the sync, and a dispatch
+under a dropped secret name 401s upstream without this repo hearing anything.
+Change both sides in the same pass, and remember that a renamed asset only
+exists on releases cut *after* the rename.

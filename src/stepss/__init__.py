@@ -19,9 +19,6 @@ Module-level flags set at import time:
 
 - ``__runTimeObs__`` - ``True`` when gnuplot is available on the system PATH and runtime
   observable plots are therefore enabled; ``False`` otherwise.
-
-This package was previously distributed as ``pyramses``. The ``pyramses``
-distribution on PyPI is now a forwarding shim onto this one.
 """
 
 __package_name__ = "stepss"

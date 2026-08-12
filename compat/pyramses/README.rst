@@ -13,8 +13,13 @@ identical: ``cfg``, ``sim``, ``extractor``, ``curplot``, ``HeliosSession`` and
 the rest keep their names.
 
 Installing ``pyramses`` still works and still gives you the current engine: it
-pulls in ``stepss`` and forwards every name to it, including submodule imports
-such as ``from pyramses.globals import RAMSESError``. It emits a
-``DeprecationWarning`` on import, and it will not be updated again.
+pulls in ``stepss`` and forwards every name to it, including the package-level
+attributes such as ``__ramses_version__`` and ``__runTimeObs__``, and submodule
+imports such as ``from pyramses.globals import RAMSESError``. It emits a
+``DeprecationWarning`` on import, and it tracks no further ``stepss`` releases.
+
+Upgrade past ``3.58.1`` if you are on it: that first shim forwarded only the
+classes and functions, so the package-level attributes raised
+``AttributeError``.
 
 Documentation: https://stepss.sps-lab.org/python/

@@ -17,11 +17,11 @@ mkdir -p "$TMPD/libs"/{lin,win,mac}
 # recognisable payload file.
 STAGE="$TMPD/stage"; mkdir -p "$STAGE"
 printf 'LINUX-SO-PAYLOAD\n'  > "$STAGE/ramses.so"
-( cd "$STAGE" && zip -q "$TMPD/pyramses-libs-linux-v9.99.zip" ramses.so )
+( cd "$STAGE" && zip -q "$TMPD/ramses-libs-linux-v9.99.zip" ramses.so )
 printf 'WINDOWS-DLL-PAYLOAD\n' > "$STAGE/ramses.dll"
-( cd "$STAGE" && zip -q "$TMPD/pyramses-libs-windows-v9.99.zip" ramses.dll )
+( cd "$STAGE" && zip -q "$TMPD/ramses-libs-windows-v9.99.zip" ramses.dll )
 printf 'MACOS-SO-PAYLOAD\n'  > "$STAGE/ramses_mac.so"
-( cd "$STAGE" && cp ramses_mac.so ramses.so && zip -q "$TMPD/pyramses-libs-macos-arm64-v9.99.zip" ramses.so )
+( cd "$STAGE" && cp ramses_mac.so ramses.so && zip -q "$TMPD/ramses-libs-macos-arm64-v9.99.zip" ramses.so )
 
 FAKEBIN="$TMPD/fakebin"; mkdir -p "$FAKEBIN"
 cat > "$FAKEBIN/gh" <<EOF
@@ -68,7 +68,7 @@ else
 fi
 
 # --- a missing asset must fail loudly ------------------------------------
-rm -f "$TMPD/pyramses-libs-windows-v9.99.zip"
+rm -f "$TMPD/ramses-libs-windows-v9.99.zip"
 PATH="$FAKEBIN:$PATH" STEPSS_LIBS_DIR="$TMPD/libs" "$SCRIPT" v9.99 >/dev/null 2>&1
 [ $? -ne 0 ] && ok "missing asset exits non-zero" || fail "missing asset should fail"
 
