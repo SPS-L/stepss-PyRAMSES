@@ -25,7 +25,7 @@ distribution on PyPI is now a forwarding shim onto this one.
 """
 
 __package_name__ = "stepss"
-__version__ = '3.58'
+__version__ = '3.59'
 __author__ = "Petros Aristidou"
 __copyright__ = "Petros Aristidou"
 __license__ = "Apache-2.0"
