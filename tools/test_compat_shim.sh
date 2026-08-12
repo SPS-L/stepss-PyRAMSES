@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
-# Verify the pyramses compatibility shim forwards to stepss.
+# Verify the retired `pyramses` distribution refuses to install and says why.
 #
-# Builds a throwaway venv, installs the real package and then the shim, and
-# asserts that the import shapes real user code uses still work:
-#   import pyramses
-#   pyramses.cfg / pyramses.sim
-#   pyramses.__ramses_version__ and the other documented attributes
-#   from pyramses.globals import RAMSESError   <- needs sys.modules aliasing
-#
-# The attribute check is not decoration. Shim 3.58.1 shipped forwarding only
-# `stepss.__all__`, so every documented package-level attribute raised
-# AttributeError, and nothing here caught it.
+# The tombstone works only as an sdist: pip runs setup.py to prepare metadata,
+# setup.py raises, and the install stops with a message naming stepss. A wheel
+# would install by unpacking and never run that code, so this script also
+# asserts the build produces no wheel. That assertion is the important one:
+# a wheel on PyPI would silently restore a working install of the retired name.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -21,47 +16,39 @@ python -m venv "$TMPD/venv"
 VPY="$TMPD/venv/bin/python"
 [ -x "$VPY" ] || VPY="$TMPD/venv/Scripts/python.exe"
 
-"$VPY" -m pip install --quiet --upgrade pip
-"$VPY" -m pip install --quiet "$ROOT/src"
-# --no-deps: resolving the shim's stepss pin would pull the published wheel
-# from PyPI, and the local build installed above is the thing under test.
-"$VPY" -m pip install --quiet --no-deps "$ROOT/compat/pyramses"
+"$VPY" -m pip install --quiet --upgrade pip build
 
-"$VPY" - <<'PY'
-import warnings
+# Build exactly what the publish workflow builds.
+PYRAMSES_BUILD_TOMBSTONE=1 "$VPY" -m build --sdist --outdir "$TMPD/dist" "$ROOT/compat/pyramses"
 
-with warnings.catch_warnings(record=True) as caught:
-    warnings.simplefilter("always")
-    import pyramses
+if compgen -G "$TMPD/dist/*.whl" >/dev/null; then
+    echo "FAIL: a wheel was built; a wheel installs without running setup.py" >&2
+    exit 1
+fi
+echo "ok: sdist only, no wheel"
 
-assert any(issubclass(w.category, DeprecationWarning) for w in caught), \
-    "FAIL: importing pyramses raised no DeprecationWarning"
+SDIST="$(echo "$TMPD"/dist/pyramses-*.tar.gz)"
+[ -f "$SDIST" ] || { echo "FAIL: no sdist built" >&2; exit 1; }
 
-assert callable(pyramses.cfg), "FAIL: pyramses.cfg missing"
-assert callable(pyramses.sim), "FAIL: pyramses.sim missing"
+# The refusal. Without the env var, installing must fail and name stepss.
+# Build isolation stays ON: that is the path a real `pip install pyramses`
+# takes, and it is what runs setup.py to prepare metadata.
+set +e
+OUT="$("$VPY" -m pip install --no-cache-dir "$SDIST" 2>&1)"
+RC=$?
+set -e
 
-from pyramses.globals import RAMSESError
-from pyramses.helios import HeliosSession
-assert issubclass(RAMSESError, Exception)
-assert HeliosSession is not None
+[ "$RC" -ne 0 ] || { echo "FAIL: installing the tombstone succeeded" >&2; exit 1; }
+echo "ok: install refused (exit $RC)"
 
-import stepss
-assert pyramses.cfg is stepss.cfg, "FAIL: shim is not forwarding to stepss"
+grep -q "pyramses is retired" <<<"$OUT" || {
+    echo "FAIL: refusal did not explain itself" >&2; echo "$OUT" >&2; exit 1; }
+grep -q "pip install stepss" <<<"$OUT" || {
+    echo "FAIL: refusal did not name the replacement" >&2; echo "$OUT" >&2; exit 1; }
+echo "ok: refusal names stepss"
 
-# The package-level attributes documented at
-# https://stepss.sps-lab.org/python/overview/ . `from stepss import *` binds
-# none of these, so they only exist if the shim mirrors the module.
-for _attr in ('__version__', '__ramses_version__', '__helios_version__',
-              '__url__', '__runTimeObs__'):
-    assert hasattr(pyramses, _attr), f"FAIL: pyramses.{_attr} missing"
-    assert getattr(pyramses, _attr) == getattr(stepss, _attr), \
-        f"FAIL: pyramses.{_attr} does not match stepss.{_attr}"
+"$VPY" -c "import pyramses" 2>/dev/null && {
+    echo "FAIL: pyramses is importable in the test venv" >&2; exit 1; }
+echo "ok: pyramses not importable"
 
-# `ramses = pyramses.scripts.exec:run` was the old console script.
-from pyramses.scripts.exec import run
-assert callable(run), "FAIL: pyramses.scripts.exec.run missing"
-
-print("PASS: shim forwards to stepss")
-PY
-
-echo "PASS: all compat shim checks"
+echo "PASS: all pyramses tombstone checks"

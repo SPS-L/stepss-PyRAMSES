@@ -172,38 +172,39 @@ why the Helios tests passed for a long time before any test exercised RAMSES.
   it starts with `@`, and git permits a tag named `@evil`.
 - The RAMSES API is camelCase (`addData`, `execSim`); `stepss.helios` is
   deliberately PEP 8 snake_case.
-- The `pyramses` distribution is a forwarding shim in `compat/pyramses/`,
-  published by `publish-compat-shim.yml`. Do not rename that workflow file: the
-  PyPI trusted publisher binds to it. See below before touching the shim.
+- `pyramses` is a retired name, not an alias. `compat/pyramses/` is its
+  tombstone, published by `publish-compat-shim.yml`. See below before touching
+  it.
 
-## The pyramses compatibility shim
+## The pyramses tombstone
 
-`compat/pyramses/` is the whole of the old `pyramses` distribution: it declares
-a dependency on `stepss` and re-exports it, so `import pyramses` keeps working
-and keeps delivering the current engine. It is published rarely and does not
-track `stepss` releases, which only works because it forwards *dynamically*.
+`compat/pyramses/` exists to make `pip install pyramses` **fail**, with a
+message naming `stepss`. It is not a compatibility shim and must not become one
+again: 3.58.1 was a forwarding shim, and forwarding kept the retired name
+working well enough that nothing moved off it.
 
-- **It forwards by mirroring `vars(stepss)`, not by listing names.** 3.58.1
-  shipped with `from stepss import *` as its only forwarding, which binds just
-  the names in `stepss.__all__`. Every documented package-level attribute
-  (`__ramses_version__`, `__helios_version__`, `__runTimeObs__`, `__url__`)
-  therefore raised `AttributeError` through the shim while working fine on
-  pyramses 3.58. 3.58.2 replaced the list with the mirror. Do not "tidy" it back
-  into an explicit list: a list in a distribution that is not republished can
-  only go stale again.
-- **Bind `globals()` to a local before that mirror loop.** `stepss` has a
-  submodule named `globals`, so the iteration that copies it shadows the
-  builtin, and the next call raises `TypeError: 'module' object is not
-  callable`.
-- **Attribute mirroring is not submodule aliasing.** `from pyramses.globals
-  import RAMSESError` and `from pyramses.scripts.exec import run` resolve only
-  because the shim writes `sys.modules` entries. Adding a subpackage to `stepss`
-  that old code imported by path means adding it to that loop.
-- **PyPI files are immutable, so any shim fix is a new version.** Bump
-  `version=` in `compat/pyramses/setup.py`, never re-upload.
+- **The refusal lives in `setup.py`, so it only works from an sdist.** pip runs
+  `setup.py` to prepare metadata from an sdist and never runs it for a wheel, so
+  a wheel on PyPI would silently restore a working install of the retired name.
+  Publish the sdist alone. The workflow and `tools/test_compat_shim.sh` both
+  assert no wheel is built; do not relax either.
+- **`PYRAMSES_BUILD_TOMBSTONE` is the escape hatch that lets the build run.**
+  Building the sdist executes `setup.py` too, so the raise is gated on that
+  variable and only the publish workflow sets it. It is an env var rather than a
+  `sys.argv` check because pip drives builds through
+  `prepare_metadata_for_build_wheel`, not through a recognisable command.
+- **`pyramses/__init__.py` raises on import** for the one case the install
+  refusal cannot cover: an environment that already has an older `pyramses` and
+  upgrades it in place.
+- **PyPI files are immutable, so any change is a new version.** Bump `version=`
+  in `compat/pyramses/setup.py`, never re-upload. 3.58.1 was the shim, 3.58.2 is
+  the tombstone.
 - `tools/test_compat_shim.sh` is the only thing that checks any of this, and no
   routine CI job runs it: it runs inside `publish-compat-shim.yml`. Run it by
-  hand after touching either the shim or `stepss`'s public surface.
+  hand after touching the tombstone.
+- **Do not rename `publish-compat-shim.yml`.** The PyPI trusted publisher on the
+  `pyramses` project binds to that filename alone. The name is stale, describing
+  a shim that no longer exists, and stays that way for exactly that reason.
 
 ## Cross-repo names move in lockstep
 

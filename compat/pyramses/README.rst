@@ -1,25 +1,18 @@
-pyramses is now stepss
-======================
+pyramses is retired: install stepss
+====================================
 
-This package is a compatibility shim. The project it used to hold was renamed
-to `stepss <https://pypi.org/project/stepss/>`_.
-
-Install the real package::
+This project was renamed. Install `stepss <https://pypi.org/project/stepss/>`_::
 
    pip install stepss
 
-Then change ``import pyramses`` to ``import stepss``. The API is otherwise
-identical: ``cfg``, ``sim``, ``extractor``, ``curplot``, ``HeliosSession`` and
-the rest keep their names.
+Then change ``import pyramses`` to ``import stepss``. The API is unchanged:
+``cfg``, ``sim``, ``extractor``, ``curplot`` and ``HeliosSession`` keep their
+names, and ``from pyramses.globals import X`` becomes
+``from stepss.globals import X``.
 
-Installing ``pyramses`` still works and still gives you the current engine: it
-pulls in ``stepss`` and forwards every name to it, including the package-level
-attributes such as ``__ramses_version__`` and ``__runTimeObs__``, and submodule
-imports such as ``from pyramses.globals import RAMSESError``. It emits a
-``DeprecationWarning`` on import, and it tracks no further ``stepss`` releases.
-
-Upgrade past ``3.58.1`` if you are on it: that first shim forwarded only the
-classes and functions, so the package-level attributes raised
-``AttributeError``.
+``stepss`` is the same package under its current name, and it is the only one
+that tracks the RAMSES and Helios engines. Installing ``pyramses`` is refused
+rather than redirected silently, so that nothing keeps depending on a name that
+receives no further releases.
 
 Documentation: https://stepss.sps-lab.org/python/

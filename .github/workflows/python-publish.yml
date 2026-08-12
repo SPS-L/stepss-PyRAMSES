@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'stepss release tag whose attached distributions to upload, e.g. v0.3.1'
+        description: 'stepss release tag whose attached distributions to upload, e.g. v3.60'
         required: true
         type: string
 

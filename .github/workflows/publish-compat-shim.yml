@@ -1,14 +1,14 @@
-name: Publish compatibility shim
+name: Publish the pyramses tombstone
 
-# By hand, and rarely. The `pyramses` distribution is a forwarding shim onto
-# `stepss`: it mirrors whatever `stepss` exposes at import time, so it does not
-# need republishing when `stepss` releases and deliberately has no trigger tied
-# to one. Run this only to correct the shim itself, and bump `version=` in
-# compat/pyramses/setup.py first, because PyPI files are immutable.
+# By hand. Publishes the `pyramses` tombstone: the retired name, whose only
+# job is to refuse installation and point at `stepss`. It tracks no `stepss`
+# release, so it has no trigger tied to one. Bump `version=` in
+# compat/pyramses/setup.py before every run, because PyPI files are immutable.
 #
-# It is a separate workflow from the release pipeline because the PyPI trusted
-# publisher on the `pyramses` project binds to this filename alone. Renaming
-# this file breaks that binding.
+# Do not rename this file. The PyPI trusted publisher on the `pyramses`
+# project binds to this filename alone, and renaming it breaks that binding.
+# The name is stale (the distribution is a tombstone, not a shim) and stays
+# that way for exactly that reason.
 on:
   workflow_dispatch:
     inputs:
@@ -36,22 +36,31 @@ jobs:
         with:
           python-version: '3.12'
 
-      # The forwarding test installs the real package and imports it. Import
-      # alone does not load ramses.so, but helios is touched, and a job that
-      # ends up loading either library without these fails at load time rather
-      # than at import. Cheap insurance; every CI job here installs them.
-      - name: Install the bundled libraries' system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libopenblas0 libgfortran5 libgomp1
-
-      - name: Build the shim
+      # sdist ONLY, and PYRAMSES_BUILD_TOMBSTONE is what lets the build run at
+      # all. The refusal lives in setup.py, which pip executes to prepare
+      # metadata from an sdist and never executes for a wheel: publishing a
+      # wheel would silently restore a working install of the retired name.
+      # tools/test_compat_shim.sh asserts both halves.
+      - name: Build the tombstone
+        env:
+          PYRAMSES_BUILD_TOMBSTONE: '1'
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip build
-          python -m build --sdist --wheel --outdir dist/ compat/pyramses
+          python -m build --sdist --outdir dist/ compat/pyramses
           ls -l dist/
 
-      - name: Verify the shim forwards to stepss
+      - name: Verify the tombstone refuses to install
         run: bash tools/test_compat_shim.sh
+
+      - name: Refuse to upload a wheel
+        run: |
+          set -euo pipefail
+          if compgen -G 'dist/*.whl' >/dev/null; then
+            echo "FAIL: dist/ holds a wheel; a wheel installs without running setup.py"
+            exit 1
+          fi
+          echo "OK: sdist only"
 
       # Read from github.event.inputs, which is a string, and compare against
       # the quoted literal. The `inputs` context would give a boolean here, and
