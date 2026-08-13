@@ -3,7 +3,7 @@
 `kundur_small_signal.ipynb` computes the eigenvalues, damping ratios,
 participation factors and mode shapes of the Kundur two-area benchmark, with and
 without its power system stabilisers, and shows that the inter-area mode is
-unstable without them. No MATLAB is involved.
+unstable without them. The engine does the analysis itself.
 
 ```sh
 pip install stepss notebook
