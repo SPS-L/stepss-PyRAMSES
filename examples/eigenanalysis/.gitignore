@@ -1,0 +1,4 @@
+# The notebook runs each PSS variant in its own directory so their results
+# files do not collide. Both are outputs, not inputs.
+run_pss/
+run_nopss/

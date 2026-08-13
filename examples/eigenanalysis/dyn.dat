@@ -1,0 +1,38 @@
+FNOM 60. ;
+
+# SYNC_MACH   FP FQ  P     Q     SNOM  Pnom H  D  IBRATIO
+#             XT/RL  Xl   Xd   X'd    X"d   Xq   X'q  X"q   m   n  Ra     T'do  T"do  T'qo  T"qo
+#             EXC exc_kundur   TR    KA    TA    TB    KSTAB  TW    T1    T2    T3   T4
+#             TOR THERMAL_GENERIC1  sigma  Tmes  Tsm  zdotmin zdotmax  zmin  zmax  Thp  fhp  Tr   fmp  Tlp
+		
+ SYNC_MACH G1  1  1. 1.  0.  0.  900 810 6.5 0. 1.6
+              XT     0.2  1.8  0.3    0.25  1.7  0.55 0.25  0.  1. 0.0025 8.0   0.03  0.4   0.05
+              EXC exc_kundur   0.01  200   1.0   1.0   20.0   10.0  0.05  0.02  3.0  5.4
+              TOR THERMAL_GENERIC1  0.04   0.1   0.4  -0.1    0.1      0.    1.0   0.2  0.4  3.0  0.3  0.3 ;			 
+
+ SYNC_MACH G2  2  1. 1.  0.  0.  900 810 6.5 0. 1.6
+              XT     0.2  1.8  0.3    0.25  1.7  0.55 0.25  0.  1. 0.0025 8.0   0.03  0.4   0.05
+              EXC exc_kundur   0.01  200   1.0   1.0   20.0   10.0  0.05  0.02  3.0  5.4  
+              TOR THERMAL_GENERIC1  0.04   0.1   0.4  -0.1    0.1      0.    1.0   0.2  0.4  3.0  0.3  0.3 ;	
+
+ SYNC_MACH G3  3  1. 1.  0.  0.  900 810 6.175 0. 1.6
+              XT     0.2  1.8  0.3    0.25  1.7  0.55 0.25  0.  1. 0.0025 8.0   0.03  0.4   0.05
+              EXC exc_kundur   0.01  200   1.0   1.0   20.0   10.0  0.05  0.02  3.0  5.4 
+              TOR THERMAL_GENERIC1  0.04   0.1   0.4  -0.1    0.1      0.    1.0   0.2  0.4  3.0  0.3  0.3 ;	
+
+ SYNC_MACH G4  4  1. 1.  0.  0.  900 810 6.175 0. 1.6
+              XT     0.2  1.8  0.3    0.25  1.7  0.55 0.25  0.  1. 0.0025 8.0   0.03  0.4   0.05
+              EXC exc_kundur   0.01  200   1.0   1.0   20.0   10.0  0.05  0.02  3.0  5.4 
+              TOR THERMAL_GENERIC1  0.04   0.1   0.4  -0.1    0.1      0.    1.0   0.2  0.4  3.0  0.3  0.3 ;	 
+
+
+#INJEC vfd_load inj_name bus_name FP FQ P  Q  DP A1 alpha1 A2    alpha2 alpha3 DQ  B1 beta1 B2 beta2 beta3 Vinit Vmin foption Tmes ; 
+                                
+INJEC vfd_load  L7       7        1. 1. 0. 0. 0. 1. 1.0    0.    0.     0.     0.  1. 2.0   0. 0.    0.    0.    0.5  0       0.10 ;    
+INJEC vfd_load  L9       9        1. 1. 0. 0. 0. 1. 1.0    0.    0.     0.     0.  1. 2.0   0. 0.    0.    0.    0.5  0       0.10 ;  
+
+# SHUNT shunt_name bus_name Q   br ;
+
+SHUNT   C7         7        200 1  ;
+SHUNT   C9         9        350 1  ; 
+
