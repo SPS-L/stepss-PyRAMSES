@@ -39,3 +39,6 @@ int addObserv(char *string);
 int finalObserv(void);
 int get_last_err_log(char *msg);
 int get_Jac(void);
+int run_ssa(char *basename, double real_limit, double pf_threshold);
+int get_state_matrix_size(int *nx);
+int get_state_matrix(int nx, double *a_sys);
