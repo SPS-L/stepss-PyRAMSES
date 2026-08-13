@@ -10,17 +10,17 @@ pip install stepss notebook
 jupyter notebook kundur_small_signal.ipynb
 ```
 
-## Requires a RAMSES newer than 3.59
+## Requires a RAMSES newer than 3.60
 
 The notebook drives the analysis with an `EIG` disturbance, which was added to
-the engine after the 3.59 release. On an older bundle the disturbance is
+the engine after the v3.60 release. On an older bundle the disturbance is
 accepted and no results files appear.
 
 The `stepss` version's leading components name the bundled RAMSES, so
 `stepss.__version__` tells you directly:
 
 ```python
-import stepss; print(stepss.__version__)   # needs > 3.59
+import stepss; print(stepss.__version__)   # needs > 3.60
 ```
 
 ## What you should see
