@@ -54,7 +54,7 @@ Key Features
 - **Runtime interaction** - query bus voltages, branch flows, and component observables while paused; inject disturbances on-the-fly
 - **Trajectory post-processing** - extract and plot time-series results from Fortran binary trajectory files
 - **Parameter sweeps** - script multiple simulations with varying parameters or disturbances
-- **Eigenanalysis support** - export system Jacobian matrices for small-signal stability analysis
+- **Small-signal stability analysis** - compute eigenvalues, damping ratios, participation factors and mode shapes in the engine, or export the system Jacobian and drive your own solver. See ``examples/eigenanalysis/`` for an annotated walkthrough
 - **AC power flow** - the ``stepss.helios`` module runs Helios power flows: solve, modify with redispatch, N-1 contingency screening, and file exports
 - **Shared data files** - the same ``.dat``, ``.dst`` and ``.obs`` files run in the Java edition, so a case can move between the two
 - **Scientific Python integration** - works natively with NumPy, SciPy, Matplotlib, and Jupyter
