@@ -9,5 +9,5 @@ RAMSES_VERSION is also what the stepss version number is built from, so the
 leading components of __version__ always name the library bundled here.
 """
 
-RAMSES_VERSION = "v3.60"
+RAMSES_VERSION = "v3.70"
 HELIOS_VERSION = "v1.4.1"
