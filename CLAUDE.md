@@ -139,7 +139,6 @@ convention `stepss-uramses` uses). Run them after any change:
 bash tools/test_bump_version.sh
 bash tools/test_update_ramses_libs.sh
 bash tools/test_compare_versions.sh
-bash tools/test_compat_shim.sh
 ```
 
 **Logic that a workflow depends on belongs in `tools/`, not in a heredoc.**
@@ -172,50 +171,13 @@ why the Helios tests passed for a long time before any test exercised RAMSES.
   it starts with `@`, and git permits a tag named `@evil`.
 - The RAMSES API is camelCase (`addData`, `execSim`); `stepss.helios` is
   deliberately PEP 8 snake_case.
-- `pyramses` is a retired name, not an alias. `compat/pyramses/` is its
-  tombstone, published by `publish-compat-shim.yml`. See below before touching
-  it.
-
-## The pyramses tombstone
-
-`compat/pyramses/` exists to make `pip install pyramses` **fail**, with a
-message naming `stepss`. It is not a compatibility shim and must not become one
-again: 3.58.1 was a forwarding shim, and forwarding kept the retired name
-working well enough that nothing moved off it.
-
-- **The refusal lives in `setup.py`, so it only works from an sdist.** pip runs
-  `setup.py` to prepare metadata from an sdist and never runs it for a wheel, so
-  a wheel on PyPI would silently restore a working install of the retired name.
-  Publish the sdist alone. The workflow and `tools/test_compat_shim.sh` both
-  assert no wheel is built; do not relax either.
-- **`PYRAMSES_BUILD_TOMBSTONE` is the escape hatch that lets the build run.**
-  Building the sdist executes `setup.py` too, so the raise is gated on that
-  variable and only the publish workflow sets it. It is an env var rather than a
-  `sys.argv` check because pip drives builds through
-  `prepare_metadata_for_build_wheel`, not through a recognisable command.
-- **`pyramses/__init__.py` raises on import** for the one case the install
-  refusal cannot cover: an environment that already has an older `pyramses` and
-  upgrades it in place.
-- **There is exactly one release, and there must never be another.** PyPI cannot
-  host a project with no files: one with none behaves like a deleted project, so
-  `pip install pyramses` would fail with a bare resolver error and say nothing.
-  The single release exists only to carry the notice. `3.58.3` sits above the
-  last real release so range pins such as `pyramses>=3.5` resolve to it and read
-  the notice; a low version would be reached only by a bare install.
-- **`3.58`, `3.58.1` and `3.58.2` are burned.** The project was deleted from
-  PyPI, and a deleted filename can never be re-uploaded even after the project
-  is recreated. Never reuse those numbers.
-- **Archive the project on PyPI after publishing.** Archiving keeps it
-  installable and resolvable while blocking further releases, which holds the
-  name and keeps the notice from being replaced. Deleting instead releases the
-  name for anyone to register, which is how this project came to need
-  reclaiming.
-- `tools/test_compat_shim.sh` is the only thing that checks any of this, and no
-  routine CI job runs it: it runs inside `publish-compat-shim.yml`. Run it by
-  hand after touching the tombstone.
-- **Do not rename `publish-compat-shim.yml`.** The PyPI trusted publisher on the
-  `pyramses` project binds to that filename alone. The name is stale, describing
-  a shim that no longer exists, and stays that way for exactly that reason.
+- **`pyramses` is a closed chapter, not a name to serve.** The project is
+  archived on PyPI holding zero releases, so the name is held permanently and
+  cannot receive uploads. `pip install pyramses` fails with a bare resolver
+  error, which is the intended end state. Do not add a shim, a tombstone, a
+  redirect package or a publish workflow back: an archived project rejects
+  uploads, so none of it could reach PyPI, and a forwarding shim is what kept
+  the old name alive long after the rename. This repo publishes `stepss` only.
 
 ## Trusted publishers bind to a workflow filename
 
