@@ -36,7 +36,7 @@ class cfg(object):
     - ``_disc`` (*list of str*) — path for the discrete events trace output.
     - ``_obs`` (*list of str*) — observables definition file (.dat or .obs).
     - ``_trj`` (*list of str*) — Fortran binary trajectory output file (.trj).
-    - ``_runobs`` (*list of str*) — runtime observable descriptors for gnuplot.
+    - ``_runobs`` (*list of str*): runtime observable descriptors.
     - ``_out`` (*list of str*) — execution log / output trace file.
 
     :Example:
@@ -393,7 +393,7 @@ class cfg(object):
     def addRunObs(self, runobs):
         """Add runtime observable.
         
-        This defines some states that will be displayed during the simulation using gnuplot.
+        This defines some states the engine records while the simulation runs.
         
         :param str runobs: Description of runtime observable as defined in the RAMSES userguide
         
@@ -426,11 +426,13 @@ class cfg(object):
 
 
         """
-        if _globals.__runTimeObs__:
-            if runobs not in self._runobs:
-                self._runobs.append(runobs)
-        else:
-            warnings.warn('Gnuplot is not the path, so runtime observables are disabled.')
+        # Unconditional. This used to be gated on a gnuplot PATH probe, from
+        # when RAMSES drew run-time observables itself by piping to gnuplot, and
+        # the else branch made this method a silent no-op for anyone without
+        # gnuplot installed. The engine writes the observable file and calls
+        # nothing, so there is no longer a condition to test.
+        if runobs not in self._runobs:
+            self._runobs.append(runobs)
 
     def clearRunObs(self):
         """Remove all runtime observable descriptors from the case."""

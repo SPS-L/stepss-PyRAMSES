@@ -17,8 +17,9 @@ Public API exported by this package:
 
 Module-level flags set at import time:
 
-- ``__runTimeObs__`` - ``True`` when gnuplot is available on the system PATH and runtime
-  observable plots are therefore enabled; ``False`` otherwise.
+- ``__runTimeObs__`` - always ``True``. Run-time observables no longer depend on
+  anything being installed, so this flag has nothing left to report. It is kept
+  because it is public, and it is deprecated: do not branch on it.
 """
 
 __package_name__ = "stepss"
@@ -31,12 +32,9 @@ __email__ = "apetros@pm.me"
 __url__ = "https://stepss.sps-lab.org"
 __status__ = "5 - Production/Stable"
 
-import sys
-from warnings import warn
-
 from . import globals as _globals
 from .cases import cfg
-from .globals import __which, HeliosError
+from .globals import HeliosError
 from .simulator import sim
 from .extractor import extractor, curplot, cur
 from . import helios
@@ -47,17 +45,14 @@ from ._bundled import HELIOS_VERSION as __helios_version__
 __all__ = ["cfg", "sim", "extractor", "cur", "curplot", "helios",
            "HeliosSession", "HeliosError"]
 
-# Detect gnuplot at import time; propagate result to globals so that cases.py
-# (which reads __runTimeObs__ from globals at import time) also gets the correct value.
-if sys.platform in ('win32', 'cygwin'):
-    checkGnuplot = __which('gnuplot.exe')
-else:
-    checkGnuplot = __which('gnuplot')
-if checkGnuplot is None:
-    warn("RAMSES: Gnuplot executable could not be found in the system path, so the runtime observables are disabled.")
-    _globals.__runTimeObs__ = False
-else:
-    _globals.__runTimeObs__ = True
-
-# Re-export the (now-updated) flag under the expected public name.
+# No gnuplot probe. This package has always plotted with matplotlib, through
+# curplot; the probe existed because RAMSES used to draw run-time observables
+# itself by piping to gnuplot, so a machine without gnuplot could not produce
+# them. RAMSES no longer does that: it writes the observable file and calls
+# nothing, so gnuplot's presence has no bearing on anything here.
+#
+# Leaving the probe in place was not merely untidy. addRunObs() gated on this
+# flag and became a silent no-op when the probe failed, so every user without
+# gnuplot installed lost run-time observables for a reason that no longer
+# existed. Kept as a name, always True, because it is documented public API.
 __runTimeObs__ = _globals.__runTimeObs__
