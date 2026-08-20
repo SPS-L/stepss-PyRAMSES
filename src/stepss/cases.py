@@ -15,6 +15,48 @@ from .globals import RAMSESError, CustomWarning
 warnings.showwarning = CustomWarning
 
 
+def _dstProblem(dstfile):
+    """Return None if *dstfile* can drive a run, or a sentence saying what is wrong.
+
+    Mirrors what the engine itself accepts. A blank line, or one opening with
+    ``#`` or ``!``, is a comment. Every other line is a record whose first field
+    is a time and whose remainder is the description, and the run ends at the
+    first record whose description carries ``STOP``.
+
+    :param str dstfile: path to the disturbance file to check.
+    :returns: None when the file is usable, otherwise the reason it is not.
+    :rtype: str or None
+    """
+    records = 0
+    untimed = False
+    try:
+        with open(dstfile, 'r', encoding='utf-8', errors='replace') as records_file:
+            for line in records_file:
+                text = line.strip()
+                if not text or text[0] in '#!':
+                    continue
+                _, space, description = text.partition(' ')
+                if not space:
+                    # The engine refuses a record with fewer than two fields.
+                    # Noting a bare STOP separately turns "no STOP record" into
+                    # a sentence the reader can act on, with STOP on screen.
+                    untimed = untimed or 'STOP' in text
+                    continue
+                records += 1
+                if 'STOP' in description:
+                    return None
+    except IOError as e:
+        return 'RAMSES: The disturbance file %s could not be read: %s' % (dstfile, e)
+
+    if untimed:
+        return ('RAMSES: The disturbance file %s has a STOP without a time. Every '
+                'record starts with its time, as in "240.0 STOP".' % dstfile)
+    if records == 0:
+        return 'RAMSES: The disturbance file %s has no disturbance records.' % dstfile
+    return ('RAMSES: The disturbance file %s has no STOP record. A dynamic simulation '
+            'ends at its STOP time, so add a line such as "240.0 STOP".' % dstfile)
+
+
 class cfg(object):
     """Simulation case configuration.
 
@@ -174,8 +216,16 @@ class cfg(object):
 
         .. warning:: If *userFile* already exists it will be overwritten.
         """
-        if not self._dataset or not self._dstset:
-            raise RAMSESError('Dataset and disturbance set cannot be empty.')
+        if not self._dataset:
+            raise RAMSESError('RAMSES: No data file is set. A case needs at least one.')
+        if not self._dstset:
+            raise RAMSESError('RAMSES: No disturbance file is set. A dynamic simulation '
+                              'needs one, ending in a STOP record.')
+        # Re-checked here rather than trusted from addDst: the file can be
+        # edited, or replaced, between being attached and being run.
+        problem = _dstProblem(self._dstset[0])
+        if problem:
+            raise RAMSESError(problem)
 
         cmdFile = ""
 
@@ -534,11 +584,15 @@ class cfg(object):
 
         .. warning:: A disturbance file must be provided before the simulation can start.
         """
-        if os.path.isfile(dstfile):
-            del self._dstset[:]
-            self._dstset.append(dstfile)
-        else:
+        if not os.path.isfile(dstfile):
             raise IOError('RAMSES: The dstfile %s does not exist or is not valid.' % (dstfile))
+        # Checked before the case is touched, so a rejected file never replaces
+        # a working one.
+        problem = _dstProblem(dstfile)
+        if problem:
+            raise RAMSESError(problem)
+        del self._dstset[:]
+        self._dstset.append(dstfile)
 
     def getDst(self):
         """Get disturbance
