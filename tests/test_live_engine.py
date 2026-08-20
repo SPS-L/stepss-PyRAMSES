@@ -66,10 +66,17 @@ def live_run(tmp_path_factory):
             shutil.copy(src, run_dir / src.name)
     (run_dir / "driver.py").write_text(DRIVER)
 
+    # The subprocess must import the same stepss this session imported: the
+    # installed wheel under CI, a working tree when one is on the path. Naming
+    # the source tree here instead would shadow the wheel the release gate is
+    # there to test.
+    import stepss
+
     env = dict(os.environ)
     env["MPLBACKEND"] = "Agg"
     env["PYTHONPATH"] = os.pathsep.join(
-        [str(REPO_ROOT / "src")] + ([env["PYTHONPATH"]] if "PYTHONPATH" in env else []))
+        [str(Path(stepss.__file__).resolve().parents[1])]
+        + ([env["PYTHONPATH"]] if "PYTHONPATH" in env else []))
     done = subprocess.run([sys.executable, "driver.py"], cwd=run_dir, env=env,
                           capture_output=True, text=True)
     assert done.returncode == 0, done.stdout + done.stderr
