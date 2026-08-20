@@ -95,32 +95,6 @@ class HeliosError(Exception):
     pass
 
 
-def __which(program):
-    """Locate a program on the system PATH, similar to the Unix ``which`` command.
-
-    :param str program: executable name (with or without full path)
-    :returns: full path to the executable if found and executable, otherwise ``None``
-    :rtype: str or None
-    """
-
-    def is_exe(fpath):
-        """Return True if *fpath* is a regular file and is executable."""
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, fname = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ.get("PATH", "").split(os.pathsep):
-            path = path.strip('"')
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-
-    return None
-
-
 def silentremove(filename):
     """Delete a file, silently ignoring the case where it does not exist.
 

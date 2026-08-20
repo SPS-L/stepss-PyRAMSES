@@ -53,6 +53,7 @@ Key Features
 - **Complete simulation workflow** - define cases, run simulations, pause/continue, and extract results, all from Python
 - **Runtime interaction** - query bus voltages, branch flows, and component observables while paused; inject disturbances on-the-fly
 - **Trajectory post-processing** - extract and plot time-series results from Fortran binary trajectory files
+- **Live monitoring** - ``stepss.monitor`` steps a running simulation and plots the quantities you choose as they are computed
 - **Parameter sweeps** - script multiple simulations with varying parameters or disturbances
 - **Small-signal stability analysis** - compute eigenvalues, damping ratios, participation factors and mode shapes in the engine, or export the system Jacobian and drive your own solver. See ``examples/eigenanalysis/`` for an annotated walkthrough
 - **AC power flow** - the ``stepss.helios`` module runs Helios power flows: solve, modify with redispatch, N-1 contingency screening, and file exports
@@ -72,7 +73,7 @@ Minimal installation (no plotting or notebook support)::
 
    pip install stepss
 
-**Optional:** Install `Gnuplot <http://www.gnuplot.info/>`_ to enable real-time observable plots during simulation. stepss will still work without it, but runtime plots will be disabled.
+**Live plots:** ``stepss.monitor`` draws chosen quantities while a simulation runs. It uses matplotlib, which pip installs above, so nothing further is needed.
 
 Linux System Prerequisites
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

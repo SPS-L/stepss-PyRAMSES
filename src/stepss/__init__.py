@@ -12,6 +12,7 @@ Public API exported by this package:
 - :class:`~stepss.extractor.extractor` - parse Fortran binary trajectory files post-simulation.
 - :class:`~stepss.extractor.cur` - lightweight NamedTuple holding a (time, value, msg) timeseries.
 - :func:`~stepss.extractor.curplot` - plot one or more :class:`cur` objects on a single axes.
+- :class:`~stepss.live.monitor` - plot chosen quantities while a simulation runs.
 - :class:`~stepss.helios.HeliosSession` - run AC power flows with the Helios engine.
 - :class:`~stepss.globals.HeliosError` - exception raised by Helios calls.
 
@@ -37,12 +38,13 @@ from .cases import cfg
 from .globals import HeliosError
 from .simulator import sim
 from .extractor import extractor, curplot, cur
+from .live import monitor
 from . import helios
 from .helios import HeliosSession
 from ._bundled import RAMSES_VERSION as __ramses_version__
 from ._bundled import HELIOS_VERSION as __helios_version__
 
-__all__ = ["cfg", "sim", "extractor", "cur", "curplot", "helios",
+__all__ = ["cfg", "sim", "extractor", "cur", "curplot", "monitor", "helios",
            "HeliosSession", "HeliosError"]
 
 # No gnuplot probe. This package has always plotted with matplotlib, through
