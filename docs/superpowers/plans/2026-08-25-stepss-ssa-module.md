@@ -756,7 +756,7 @@ def test_participation_of_the_interarea_mode_lists_all_four_machines(res):
     assert len(interarea) == 1
     rows = res.participation(interarea[0], floor=0.05)
     devices = {r.device.strip() for r in rows if r.variable == "omega"}
-    assert devices == {"g1", "g2", "g3", "g4"}
+    assert devices == {"G1", "G2", "G3", "G4"}
 
 
 def test_participation_floor_is_applied_here_not_by_the_engine(res):
@@ -2283,7 +2283,7 @@ def test_mode_shape_plot_is_polar_and_labels_every_machine(res):
     ax = res.mode_shape_plot(interarea(res))
     assert ax.name == "polar"
     labels = {text.get_text().strip() for text in ax.texts}
-    assert {"g1", "g2", "g3", "g4"} <= labels
+    assert {"G1", "G2", "G3", "G4"} <= labels
 
 
 def test_mode_shape_plot_refuses_a_degenerate_mode(res):
