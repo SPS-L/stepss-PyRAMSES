@@ -1488,7 +1488,17 @@ def load_archive(path, into=None):
         with tarfile.open(target, 'r:*') as archive:
             for member in archive.getmembers():
                 _safe_child(into, member.name)
-            archive.extractall(into)
+            # filter='data' explicitly, rather than relying on the default.
+            # Python 3.14 changes that default to filter and warns until it
+            # does, so naming it keeps the behaviour identical either side of
+            # that release instead of changing under the package silently. It
+            # is also the right filter: an archive of this format holds
+            # regular files and one directory, and 'data' strips the device
+            # nodes, links and setuid bits none of them should carry.
+            # _safe_child above still does the path check, which the filter
+            # does not replace, because the filter reports its refusals as
+            # exceptions from inside extraction rather than before it.
+            archive.extractall(into, filter='data')
     else:
         raise RAMSESError('RAMSES: could not open %s: it is neither a zip nor a '
                           'gzipped tar, so it is not a small-signal archive.'
