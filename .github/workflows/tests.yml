@@ -11,8 +11,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Same images the release gate pins, so an ordinary PR fails here
-        # rather than during a release.
+        # Same images and the same interpreters the release gate pins, so an
+        # ordinary PR fails here rather than during a release. The interpreters
+        # were not always in step, and v3.81.1 is what that cost: the gate ran
+        # 3.12 alone, so a wheel that fails on 3.10 was published and this
+        # workflow went red on the same commit minutes afterwards.
         os: [ubuntu-24.04, windows-latest, macos-15]
         python-version: ['3.10', '3.12']
 
