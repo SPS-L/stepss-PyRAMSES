@@ -10,6 +10,13 @@ import stepss
 from stepss import ssa
 from stepss.globals import RAMSESError
 
+# sim.__del__ warns on every collection by design, and each test here creates a
+# simulator, so without this the suite reports one warning per test. The filter
+# is narrow on purpose: the point of a pristine test log is that a genuinely
+# new warning is visible in it, and only this one notice is silenced.
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:Simulator with number:UserWarning")
+
 CASE_DIR = Path(__file__).resolve().parents[1] / "examples" / "eigenanalysis"
 CASE_FILES = ("lf.dat", "dyn_noPSS.dat", "solveroptions.dat", "nothing.dst",
               "obs.dat")
