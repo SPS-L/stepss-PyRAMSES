@@ -10,17 +10,17 @@ pip install stepss notebook
 jupyter notebook kundur_small_signal.ipynb
 ```
 
-## Requires a RAMSES newer than 3.60
+## Requires RAMSES 3.79 or newer
 
-The notebook drives the analysis with an `EIG` disturbance, which was added to
-the engine after the v3.60 release. On an older bundle the disturbance is
-accepted and no results files appear.
+The analysis writes v2 results files from 3.79 onwards, which is what
+`stepss.ssa` reads. An older bundle accepts the run and writes files this
+notebook will not open.
 
 The `stepss` version's leading components name the bundled RAMSES, so
 `stepss.__version__` tells you directly:
 
 ```python
-import stepss; print(stepss.__version__)   # needs > 3.60
+import stepss; print(stepss.__version__)   # needs >= 3.79
 ```
 
 ## What you should see
@@ -70,6 +70,11 @@ your own system:
 
 Both refusals are loud: the process exits 78 and the reason is available from
 `getLastErr()`.
+
+`ssa.run()` supplies both itself, in a generated file read after the case's own
+data files, so a case of your own needs no edit. They are documented here
+because a run driven by hand, through the `EIG` record or `sim.runSsa()`, still
+needs them.
 
 ## Larger systems
 
