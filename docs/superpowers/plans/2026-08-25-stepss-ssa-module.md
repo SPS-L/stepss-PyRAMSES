@@ -3445,7 +3445,30 @@ both records itself in a generated file read last, so a case of your own needs
 no edit.
 ```
 
-In cell 5, delete the sentence "We then advance just past `t` so the event actually fires.", which describes the disturbance route the notebook no longer takes, and delete the paragraph beginning "The record takes a basename and nothing else."
+In cell 5, replace everything after the heading `## Step 2: run to the operating point and linearise there` with the text below. The first paragraph's physics is kept word for word; what changes is the mechanics around it, because the cell used to describe `execSim` and `addDisturb` and the code cell beneath it now calls neither.
+
+```
+`ssa.run()` initialises the system and pauses it at the operating point before
+triggering the analysis there, which by default is $t = 0.001$ s, the first
+step after the pre-disturbance steady state. Small-signal results are only
+meaningful *at* an operating point, so where you pause determines what you get:
+pausing mid-swing linearises about a non-equilibrium and the numbers describe
+that instant, not the steady state. Pass `t=` to analyse a later one, and the
+run advances there with no events in between.
+
+RAMSES then assembles the Jacobian, reduces it and writes three files named
+from the `basename` you give. `ssa.run()` reaches the engine through
+`sim.runSsa()`; the `EIG` disturbance record does the same thing from a `.dst`
+file, and is what to use when you are driving the run yourself.
+```
+
+In cell 3, the third bullet begins "**A disturbance file is mandatory even though we inject the disturbance from Python.**". Nothing is injected from Python on the route this notebook now takes, so replace that bullet with:
+
+```
+- **A disturbance file is mandatory even though this case has no events.** The
+  case format requires one, so `nothing.dst` exists only to satisfy it.
+  `ssa.run()` generates one for you when a case has none of its own.
+```
 
 In cell 25, keep the `getJac()` bullet, which still applies above `$EIG_MAX_STATES`, and add:
 
