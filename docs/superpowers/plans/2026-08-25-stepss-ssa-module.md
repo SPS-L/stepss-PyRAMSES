@@ -527,11 +527,25 @@ def test_read_pf_of_an_empty_file_is_empty():
 def test_read_ms_parses_the_engines_own_output():
     rows = ssa._read_ms((FIXTURES / "kundur_nopss_ms.dat").read_text())
     assert rows
+    all_zero = 0
     for entries in rows.values():
-        assert max(e.magnitude for e in entries) == pytest.approx(1.0)
+        peak = max(e.magnitude for e in entries)
+        if peak == 0.0:
+            # A mode whose omega entries are all exactly zero is written as
+            # magnitude 0, angle 0 for every omega state, rather than being
+            # skipped or divided by zero, so that the row count is the same
+            # for every mode. See the mmax <= 0 branch in ssa.f90's
+            # write_ssa_mode_shapes. Such a mode has no rotor content at all.
+            assert all(e.angle_deg == 0.0 for e in entries)
+            all_zero += 1
+            continue
+        assert peak == pytest.approx(1.0)
         # Angles are relative to the largest entry, which therefore sits at 0.
         reference = max(entries, key=lambda e: e.magnitude)
         assert reference.angle_deg == pytest.approx(0.0, abs=1e-9)
+    assert all_zero == 4, (
+        "the committed fixture carries four modes with no rotor content; "
+        "if this fails the fixture was edited, and it must not be")
 
 
 def test_read_ms_keeps_file_order():
