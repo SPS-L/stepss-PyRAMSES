@@ -179,3 +179,54 @@ def test_manifest_ignores_a_key_it_does_not_know():
     text = ("# STEPSS small-signal archive v1\nbasename ssa\n"
             "real_limit -1.0\nsaved_by STEPSS 3.74\n")
     assert ssa.Manifest.parse(text).saved_by == "STEPSS 3.74"
+
+
+# Forcing the old path on a modern interpreter trips the very
+# DeprecationWarning the filter exists to avoid. A real 3.10 user takes
+# this branch on a tarfile that has no such warning to give, so the
+# noise is an artefact of the test rather than of the code.
+@pytest.mark.filterwarnings("ignore:Python 3.14 will:DeprecationWarning")
+def test_tar_round_trip_without_the_extraction_filter(res, tmp_path, monkeypatch):
+    """The branch taken on a Python older than 3.11.4, 3.10.12 or 3.9.17.
+
+    Those interpreters have no `filter` parameter on `TarFile.extractall`, and
+    passing one is a TypeError rather than anything gentler. This package
+    supports 3.10 and the runners' 3.10 is 3.10.11, so the branch is reached in
+    practice. Version 3.81.1 shipped without it and raised that TypeError on
+    every tar archive it was asked to open there.
+
+    `hasattr(tarfile, 'data_filter')` is the check, so removing the attribute
+    is what puts this test on the older path.
+    """
+    monkeypatch.delattr(tarfile, "data_filter", raising=False)
+    target = tmp_path / "run.tar.gz"
+    ssa.save(res, target)
+    loaded, manifest = ssa.load_archive(target)
+    assert manifest.basename == "ssa"
+    assert len(loaded.modes) == len(res.modes)
+
+
+# Forcing the old path on a modern interpreter trips the very
+# DeprecationWarning the filter exists to avoid. A real 3.10 user takes
+# this branch on a tarfile that has no such warning to give, so the
+# noise is an artefact of the test rather than of the code.
+@pytest.mark.filterwarnings("ignore:Python 3.14 will:DeprecationWarning")
+def test_the_escape_guard_still_holds_without_the_extraction_filter(
+        res, tmp_path, monkeypatch):
+    """The unfiltered path leans entirely on _safe_child, so pin that it holds.
+
+    With the filter available, tarfile refuses an escaping entry itself. On an
+    older interpreter nothing does but _safe_child, which is why it was kept
+    when the filter was added rather than replaced by it.
+    """
+    monkeypatch.delattr(tarfile, "data_filter", raising=False)
+    payload = tmp_path / "payload"
+    payload.write_text("x")
+    target = tmp_path / "escape.tar.gz"
+    with tarfile.open(target, "w:gz") as archive:
+        archive.add(payload, arcname="../escaped.dat")
+    into = tmp_path / "unpacked"
+    into.mkdir()
+    with pytest.raises(RAMSESError, match="outside"):
+        ssa.load_archive(target, into=into)
+    assert list(into.iterdir()) == []

@@ -1593,7 +1593,23 @@ def load_archive(path, into=None):
             # _safe_child above still does the path check, which the filter
             # does not replace, because the filter reports its refusals as
             # exceptions from inside extraction rather than before it.
-            archive.extractall(into, filter='data')
+            #
+            # The parameter arrived with PEP 706, in 3.11.4 and backported to
+            # 3.10.12 and 3.9.17, and passing it to an older tarfile is a
+            # TypeError rather than anything gentler. This package supports
+            # 3.10, and the runners' 3.10 is 3.10.11, one patch below it, so
+            # the branch is reached in practice and not merely in theory.
+            # hasattr on data_filter is the check CPython's own documentation
+            # gives, because that attribute arrived in the same change.
+            #
+            # Extracting unfiltered on an older interpreter is safe rather
+            # than merely tolerable: _safe_child above has already refused
+            # every entry that would land outside the destination, which is
+            # exactly why the check was kept when the filter was added.
+            if hasattr(tarfile, 'data_filter'):
+                archive.extractall(into, filter='data')
+            else:
+                archive.extractall(into)
     else:
         raise RAMSESError('RAMSES: could not open %s: it is neither a zip nor a '
                           'gzipped tar, so it is not a small-signal archive.'
