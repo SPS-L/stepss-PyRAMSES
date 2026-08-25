@@ -92,6 +92,13 @@ class sim(object):
 
         sim.ramsesCount += 1
         self._ramsesNum = sim.ramsesCount  # This is the current instance of Ramses
+        # How many small-signal analyses this instance has completed. The
+        # engine retains one state matrix at a time and get_state_matrix
+        # refuses only an order mismatch, so two runs agreeing on nx, which is
+        # what re-running one case with changed data produces, would let a
+        # stale result hand back the newer matrix. A stepss.ssa.Results
+        # compares against this to refuse that instead.
+        self._ssaGeneration = 0
         self._setcalls()
 
     def __del__(self):
@@ -284,6 +291,144 @@ class sim(object):
             raise RAMSESError('RAMSES: Function get_Jac failed while reading A.')
 
         return A, E
+
+    def _noteSsaAnalysis(self):
+        """Record that a small-signal analysis has completed on this instance.
+
+        Called by :meth:`runSsa` and by :func:`stepss.ssa.run`'s disturbance
+        route, which are the two ways an analysis can be triggered. Both
+        replace the state matrix the engine retains.
+        """
+        self._ssaGeneration += 1
+
+    def runSsa(self, basename, t=None):
+        """Run the small-signal analysis and write its three results files.
+
+        The engine linearises about the operating point the run is currently
+        paused at, reduces the Jacobian to the state matrix, solves the dense
+        eigenproblem, and writes ``<basename>_modes.dat``, ``_pf.dat`` and
+        ``_ms.dat`` in the working directory.
+
+        The C entry takes a basename and nothing else, so *t* is honoured here:
+        when it is later than the simulated time already reached, the run is
+        advanced to it first, with whatever disturbances the case carries. A
+        *t* that has already passed is refused rather than silently answered
+        with the current operating point, because the difference is invisible
+        in the results.
+
+        The analysis needs ``$SCHEME DE`` and ``$OMEGA_REF SYN``. Under
+        ``$SCHEME IN`` the global Jacobian is algebraized and carries the step
+        size; under the centre-of-inertia reference frame the COI equations are
+        computed by finite differences at export time and never enter the
+        assembled Jacobian. The engine refuses both rather than producing a
+        plausible, wrong spectrum. :func:`stepss.ssa.run` supplies both itself.
+
+        :param str basename: names the three results files and is written into
+                             the engine's own record, so it may contain only
+                             letters, digits, dot, underscore and hyphen.
+        :param t: when to linearise, in seconds; defaults to
+                  :data:`stepss.ssa.MIN_TIME`.
+        :type t: float or None
+        :returns: *basename*, so the call can be chained.
+        :rtype: str
+        :raises RAMSESError: if the basename or the time is rejected, or the
+                             engine refuses the analysis. The engine's own
+                             reason is included, from :meth:`getLastErr`.
+
+        :Example:
+
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
+        >>> ram.execSim(case, 0.0)      # initialise and pause at t = 0
+        >>> ram.runSsa("ssa")
+        'ssa'
+        """
+        from . import ssa as _ssa
+
+        if t is None:
+            t = _ssa.MIN_TIME
+        if not _ssa.valid_basename(basename):
+            raise RAMSESError(
+                'RAMSES: the results basename %r cannot be used. It names the '
+                'three results files and is written into the analysis record, '
+                'so it may contain only letters, digits, dot, underscore and '
+                'hyphen.' % (basename,))
+        when = _ssa.check_time(t)
+        now = self.getSimTime()
+        if when < now - 1e-12:
+            raise RAMSESError(
+                'RAMSES: the analysis time %g s has already passed; the '
+                'simulation is at %g s. The engine linearises about wherever '
+                'the run currently sits, so this would answer a different '
+                'question silently.' % (when, now))
+        if when > now:
+            self.contSim(when)
+
+        try:
+            retval = self._ramseslib.run_ssa(basename.encode('utf-8'))
+        except (AttributeError, KeyError):
+            raise RAMSESError('RAMSES: the bundled library exports no run_ssa; '
+                              'small-signal analysis needs RAMSES 3.79 or newer.')
+        # 112 is ramses() reporting that it paused again after completing the
+        # request, exactly as get_Jac's return can also be 112.
+        if (retval != 0) and (retval != 112):
+            raise RAMSESError('RAMSES: Function runSsa() failed with the flag %i. '
+                              'Last message was: %s' % (retval, self.getLastErr()))
+        self._noteSsaAnalysis()
+        return basename
+
+    def getStateMatrix(self):
+        """Return the state matrix of the last small-signal analysis.
+
+        This is the Schur complement the engine formed before solving the
+        eigenproblem, retained by the library rather than written to any file.
+
+        The engine keeps one at a time, so read this before starting the next
+        analysis.
+
+        :returns: the matrix, of order ``nstates``
+        :rtype: numpy.ndarray
+        :raises RAMSESError: if no analysis has been run in this process, or
+                             the last one refused.
+
+        :Example:
+
+        >>> import stepss
+        >>> ram = stepss.sim()
+        >>> case = stepss.cfg("cmd.txt")
+        >>> ram.execSim(case, 0.0)
+        >>> ram.runSsa("ssa")
+        'ssa'
+        >>> A = ram.getStateMatrix()
+        >>> A.shape[0] == A.shape[1]
+        True
+        """
+        nx = ctypes.c_int(0)
+        try:
+            self._ramseslib.get_state_matrix_size(ctypes.byref(nx))
+        except (AttributeError, KeyError):
+            raise RAMSESError('RAMSES: the bundled library exports no '
+                              'get_state_matrix_size; small-signal analysis '
+                              'needs RAMSES 3.79 or newer.')
+        order = nx.value
+        if order <= 0:
+            raise RAMSESError('RAMSES: no small-signal analysis is retained. Run '
+                              'one with runSsa() first; a refused analysis '
+                              'retains nothing.')
+        buffer = (ctypes.c_double * (order * order))()
+        retval = self._ramseslib.get_state_matrix(order, buffer)
+        if retval != 0:
+            raise RAMSESError('RAMSES: Function getStateMatrix() failed with the '
+                              'flag %i. Last message was: %s'
+                              % (retval, self.getLastErr()))
+        # Column-major: entry (i, j) of the nx by nx matrix sits at
+        # a_sys[(j-1)*nx + (i-1)], which is what order='F' reconstructs. The
+        # copy detaches the array from the ctypes buffer, which is freed with
+        # this call's frame.
+        return np.reshape(np.frombuffer(buffer, dtype=np.float64,
+                                        count=order * order),
+                          (order, order), order='F').copy()
 
     def getCompName(self, comp_type, num):
         """Return the name of the *num*-th component of the given type.
