@@ -3594,10 +3594,14 @@ print(ssa.basenames('run1'))     # ['ssa']
 res = ssa.load('run1', 'ssa')
 ```
 
-#### `ssa.load_archive(path)`
+#### `ssa.load_archive(path, into=None)`
 
 Open a `.ssa` archive written by the graphical interface, in `.zip` or
 `.tar.gz`. Returns `(results, manifest)`. `res.save(path)` writes one.
+
+---
+
+---
 
 ### Filtering
 
@@ -3618,6 +3622,10 @@ Both return a `ModeView`, which composes and carries `.rows`, `.lam`,
 res.electromechanical().dominant(-1.0).table()
 ```
 
+---
+
+---
+
 ### Reading one mode
 
 #### `res.participation(mode, floor=0.05, allow_degenerate=False)`
@@ -3635,6 +3643,10 @@ Both refuse a mode whose `simple` flag is false. In a degenerate eigenspace the
 eigenvectors are not unique, so both quantities are basis-dependent and would
 come out differently on another machine.
 
+---
+
+---
+
 ### Plotting
 
 #### `view.splane(ax=None, zeta=0.05, annotate=True, interactive=None)`
@@ -3643,10 +3655,14 @@ The s-plane, fitted to the modes on screen. Under an interactive backend
 (`%matplotlib widget`) clicking a pole prints it, dragging a rectangle zooms,
 and a double click restores the fitted window.
 
-#### `res.mode_shape_plot(mode, ax=None)` and `res.participation_plot(mode, floor=0.05, ax=None)`
+#### `res.mode_shape_plot(mode, ax=None, allow_degenerate=False)` and `res.participation_plot(mode, floor=0.05, ax=None, allow_degenerate=False)`
 
 The polar dial and a horizontal bar chart. Each takes and returns an `Axes`, so
 two runs go side by side in one figure.
+
+---
+
+---
 
 ### The state matrix
 
