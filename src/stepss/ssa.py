@@ -392,6 +392,88 @@ class ModeView(object):
                               'not depend on. Install it, or use .rows.')
         return pandas.DataFrame(self.rows)
 
+    def splane(self, ax=None, zeta=DEFAULT_DAMPING_ZETA, annotate=True,
+               interactive=None):
+        """Draw the modes on the complex plane.
+
+        The vertical axis is oscillation frequency and the horizontal axis the
+        decay rate. Everything strictly left of the crimson line at ``Re = 0``
+        is stable. The dashed ray marks constant damping ratio, the usual
+        planning criterion being 0.05.
+
+        One dashed ray rather than two, because a ray of constant zeta leaves
+        the origin at ``asin(zeta)`` from the imaginary axis, so 0.05 and 0.10
+        sit 2.87 and 5.74 degrees off vertical and arrive as a single smudge
+        beside the boundary. The one that remains is adjustable, which is the
+        more useful of the two answers.
+
+        The window is fitted to the modes on screen rather than fixed, so this
+        works on any system and so that filtering actually zooms. The fitted
+        window always contains ``Re = 0``, because a view that has scrolled off
+        the boundary shows damping with nothing to measure it from.
+
+        :param ax: the axes to draw into, or None to make a figure
+        :type ax: matplotlib.axes.Axes or None
+        :param float zeta: damping ratio of the dashed ray; no ray is drawn
+                           when it is outside (0, 1)
+        :param bool annotate: label each mode with its frequency
+        :param interactive: enable click-to-select and drag-to-zoom; None means
+                            whenever the backend can update a window
+        :type interactive: bool or None
+        :returns: the axes drawn into
+        :rtype: matplotlib.axes.Axes
+        """
+        import matplotlib.pyplot as plt
+
+        from .live import _canDraw
+
+        if ax is None:
+            _, ax = plt.subplots(figsize=(6, 5))
+
+        re = self.rows['re']
+        im = self.rows['im']
+        ax.axvline(0.0, color='crimson', lw=1.5, zorder=1)
+
+        lo_re, hi_re, lo_im, hi_im = _fit_window(re, im)
+        if 0.0 < zeta < 1.0:
+            # The ray reaches the top of the window, or the far left of it,
+            # whichever is further, and is then clipped to the axes.
+            root = (1.0 - zeta ** 2) ** 0.5
+            reach = max(hi_im, abs(lo_re) * root / zeta)
+            ax.plot([0.0, -reach * zeta / root], [0.0, reach], '--',
+                    color='0.6', lw=1, zorder=1)
+
+        unstable = self.rows['zeta'] < 0.0
+        ax.scatter(re, im, s=90, facecolors='none',
+                   edgecolors=np.where(unstable, 'crimson', 'tab:blue'),
+                   linewidths=np.where(unstable, 1.8, 1.2), zorder=3, picker=6)
+        if annotate:
+            for row in self.rows:
+                ax.annotate(' %.2f Hz' % row['freq'], (row['re'], row['im']),
+                            fontsize=8)
+        if unstable.any():
+            # An empty scatter carrying the marker itself, so the key and the
+            # plot cannot come to disagree about what an unstable mode is.
+            ax.scatter([], [], s=90, facecolors='none', edgecolors='crimson',
+                       linewidths=1.8, label='unstable')
+            ax.legend(loc='lower left')
+
+        ax.set_xlim(lo_re, hi_re)
+        ax.set_ylim(lo_im, hi_im)
+        ax.set_xlabel(r'Re$(\lambda)$  [1/s]')
+        ax.set_ylabel(r'Im$(\lambda)$  [rad/s]')
+        ax.grid(alpha=0.3)
+
+        live = _canDraw() if interactive is None else bool(interactive)
+        ax._stepss_splane_interactive = live
+        if live:
+            _attach_splane_interaction(ax, self, (lo_re, hi_re, lo_im, hi_im))
+        elif interactive is None:
+            print('s-plane drawn without interaction: this backend has no window '
+                  'to update. Use %matplotlib widget for click-to-select and '
+                  'drag-to-zoom.')
+        return ax
+
 
 class Results(object):
     """One small-signal run: the three files the engine wrote, and its header.
@@ -568,6 +650,145 @@ class Results(object):
                  int((~self.modes['simple']).sum())))
         if self.pf_floor is not None:
             print('  participation written down to %g ($PF_THRES)' % self.pf_floor)
+
+    def splane(self, **kwargs):
+        """Draw every mode. See :meth:`ModeView.splane`.
+
+        :rtype: matplotlib.axes.Axes
+        """
+        return self.view().splane(**kwargs)
+
+    def mode_shape_plot(self, mode, ax=None, allow_degenerate=False):
+        """Draw one mode's rotor-speed phasors on a polar dial.
+
+        For an inter-area mode the expected picture is two groups roughly 180
+        degrees apart: the areas swinging against each other.
+
+        :param mode: a mode index, or a row of :attr:`modes`
+        :param ax: a polar axes to draw into, or None to make one
+        :type ax: matplotlib.axes.Axes or None
+        :param bool allow_degenerate: draw a degenerate mode anyway. The
+                                      picture would be basis-dependent and
+                                      would look exactly as authoritative,
+                                      which is why this is off by default.
+        :returns: the axes drawn into
+        :rtype: matplotlib.axes.Axes
+        :raises RAMSESError: if the mode is degenerate and not allowed
+        """
+        import matplotlib.pyplot as plt
+
+        entries = self.mode_shape(mode, allow_degenerate)
+        index = self._index_of(mode)
+        if ax is None:
+            _, ax = plt.subplots(figsize=(5, 5),
+                                 subplot_kw={'projection': 'polar'})
+        for entry in entries:
+            theta = np.deg2rad(entry.angle_deg)
+            ax.annotate('', xy=(theta, entry.magnitude), xytext=(0, 0),
+                        arrowprops=dict(arrowstyle='->', lw=2))
+            ax.text(theta, entry.magnitude * 1.12, entry.device.strip(),
+                    ha='center', va='center')
+        ax.set_rmax(1.3)
+        ax.set_title('Mode %d shape (rotor speeds)' % index, pad=18)
+        return ax
+
+    def participation_plot(self, mode, floor=DEFAULT_PF_FLOOR, ax=None,
+                           allow_degenerate=False):
+        """Draw one mode's participation factors as a horizontal bar chart.
+
+        :param mode: a mode index, or a row of :attr:`modes`
+        :param float floor: smallest participation factor to draw
+        :param ax: the axes to draw into, or None to make a figure
+        :type ax: matplotlib.axes.Axes or None
+        :param bool allow_degenerate: draw a degenerate mode anyway
+        :returns: the axes drawn into
+        :rtype: matplotlib.axes.Axes
+        :raises RAMSESError: if the mode is degenerate and not allowed
+        """
+        import matplotlib.pyplot as plt
+
+        rows = self.participation(mode, floor, allow_degenerate)
+        index = self._index_of(mode)
+        if ax is None:
+            _, ax = plt.subplots(figsize=(6, max(2.0, 0.3 * len(rows) + 1.0)))
+        positions = np.arange(len(rows))
+        ax.barh(positions, [row.pf for row in rows], color='tab:blue')
+        ax.set_yticks(positions)
+        ax.set_yticklabels(['%s %s' % (row.device.strip(), row.variable)
+                            for row in rows])
+        ax.invert_yaxis()
+        ax.set_xlabel('participation factor')
+        ax.set_title('Mode %d, entries at or above %g' % (index, floor))
+        return ax
+
+
+#: Margin around the fitted extent, as a fraction of it.
+_FIT_PAD = 0.06
+
+#: Smallest margin in data units, which is what keeps a window around a single
+#: mode, or around a set sharing one real part, from collapsing to zero width.
+#: A zero span maps every coordinate to the same pixel.
+_MIN_PAD = 0.5
+
+
+def _fit_window(re, im):
+    """The axis window that holds these modes, with a margin and ``Re = 0``.
+
+    :param numpy.ndarray re: real parts
+    :param numpy.ndarray im: imaginary parts
+    :returns: ``(lo_re, hi_re, lo_im, hi_im)``
+    :rtype: tuple
+    """
+    if len(re) == 0:
+        return -3.0, 0.5, 0.0, 9.0
+    lo_re, hi_re = min(float(re.min()), 0.0), max(float(re.max()), 0.0)
+    lo_im, hi_im = min(float(im.min()), 0.0), max(float(im.max()), 0.0)
+    pad_re = max((hi_re - lo_re) * _FIT_PAD, _MIN_PAD)
+    pad_im = max((hi_im - lo_im) * _FIT_PAD, _MIN_PAD)
+    return lo_re - pad_re, hi_re + pad_re, lo_im - pad_im, hi_im + pad_im
+
+
+def _attach_splane_interaction(ax, view, home):
+    """Wire click-to-select and drag-to-zoom onto an s-plane.
+
+    Both use matplotlib's own event machinery, so no other library is needed.
+    The selector is stashed on the axes because matplotlib holds only a weak
+    reference to a widget and would otherwise garbage-collect it, leaving a
+    plot that looks interactive and is not.
+
+    :param matplotlib.axes.Axes ax: the axes drawn by :meth:`ModeView.splane`
+    :param ModeView view: the modes it is showing
+    :param tuple home: the fitted window, restored on a double click
+    """
+    from matplotlib.widgets import RectangleSelector
+
+    def on_pick(event):
+        if event.artist.axes is not ax or not len(event.ind):
+            return
+        row = view.rows[event.ind[0]]
+        print('mode %d: f = %.4f Hz, zeta = %+.4f, lambda = %+.4f %+.4fj, %s'
+              % (row['index'], row['freq'], row['zeta'], row['re'], row['im'],
+                 'simple' if row['simple'] else 'DEGENERATE'))
+
+    def on_zoom(press, release):
+        if press.xdata is None or release.xdata is None:
+            return
+        ax.set_xlim(min(press.xdata, release.xdata),
+                    max(press.xdata, release.xdata))
+        ax.set_ylim(min(press.ydata, release.ydata),
+                    max(press.ydata, release.ydata))
+        ax.figure.canvas.draw_idle()
+
+    def on_click(event):
+        if event.inaxes is ax and event.dblclick:
+            ax.set_xlim(home[0], home[1])
+            ax.set_ylim(home[2], home[3])
+            ax.figure.canvas.draw_idle()
+
+    ax._stepss_splane_selector = RectangleSelector(
+        ax, on_zoom, useblit=False, button=[1], interactive=False)
+    ax.figure.canvas.mpl_connect('pick_event', on_pick)
+    ax.figure.canvas.mpl_connect('button_press_event', on_click)
 
 
 def load(directory, basename):
