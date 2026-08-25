@@ -825,7 +825,12 @@ def clear_previous_run(directory, basename):
 # paths before the working directory changes, so that a case built with
 # relative names keeps working. The output lists are deliberately left alone,
 # so that the trajectory and the traces land in the run's own directory.
-_INPUT_LISTS = ('_dataset', '_dstset', '_obs', '_init')
+#
+# The test of an input is which way the cfg method fails: addObs and addData
+# refuse a file that does not exist, while addInit warns that an existing one
+# will be overwritten. The initialisation trace is therefore an output and is
+# not in this tuple, however much its name suggests otherwise.
+_INPUT_LISTS = ('_dataset', '_dstset', '_obs')
 
 
 def _absolutise(case):
@@ -838,10 +843,14 @@ def _absolutise(case):
     :param stepss.cases.cfg case: the caller's case, which is not modified
     :returns: the copy
     :rtype: stepss.cases.cfg
+    :raises AttributeError: if a name in :data:`_INPUT_LISTS` is not a list on
+        the case. Deliberate: a default here would turn a wrong or renamed
+        attribute into a silent no-op, and an input left relative fails much
+        later and somewhere else.
     """
     copy = deepcopy(case)
     for name in _INPUT_LISTS:
-        entries = getattr(copy, name, None)
+        entries = getattr(copy, name)
         if entries:
             entries[:] = [os.path.abspath(entry) for entry in entries]
     return copy
@@ -852,6 +861,7 @@ def _same_file(left, right):
 
     :param str left: one path
     :param str right: the other
+    :returns: True when the two name one file
     :rtype: bool
     """
     try:
@@ -859,8 +869,12 @@ def _same_file(left, right):
             return os.path.samefile(left, right)
     except OSError:
         pass
-    return (os.path.normcase(os.path.abspath(left))
-            == os.path.normcase(os.path.abspath(right)))
+    # realpath rather than abspath: abspath normalises ".." but not a
+    # symlinked directory component, so a caller reaching their data file
+    # through a symlink while workdir names the real directory would slip past
+    # the collision refusal and have that file overwritten.
+    return (os.path.normcase(os.path.realpath(left))
+            == os.path.normcase(os.path.realpath(right)))
 
 
 def run(case, basename='ssa', t=None, workdir=None, jacobian=False,
@@ -898,17 +912,31 @@ def run(case, basename='ssa', t=None, workdir=None, jacobian=False,
                            it. A paused simulation is not finished, and loading
                            another case without finalising silently resumes it,
                            so this is for a caller who means to go on
-                           interrogating this run.
+                           interrogating this run. It applies only to a
+                           simulator this call created: one passed as *ram* is
+                           never finalised here whatever this is set to, on the
+                           principle of not closing what you did not open, and
+                           is the caller's to :meth:`~stepss.simulator.sim.endSim`.
     :returns: the run
     :rtype: Results
 
     .. note:: When the case carries a disturbance file of its own, *t* must
               fall before that file's STOP record, because a run that has
-              already stopped cannot be advanced to *t*. That cannot be checked
+              already stopped cannot be advanced to *t*, and before
+              ``t + 0.010`` under ``jacobian=True``, which runs that much
+              further to let the paired records fire. That cannot be checked
               here without parsing the caller's file, so it is stated rather
               than enforced; the failure is loud, since :meth:`runSsa` refuses
               a *t* earlier than the simulated time already reached. The
               generated file used when the case has none stops just after *t*.
+
+    .. note:: The working directory is process-wide, so two of these must not
+              run concurrently from threads: their ``chdir`` calls interleave
+              and one analysis writes its results into the other's directory,
+              which no check here can detect, because file existence is the
+              only evidence a run produced anything and both runs find files.
+              :class:`stepss.simulator.sim` carries the same restriction for
+              its own reasons.
     :raises RAMSESError: if the basename or time is rejected, the generated
                          settings file would overwrite one of the case's own
                          data files, a previous run cannot be cleared, or the
@@ -1004,12 +1032,20 @@ def run(case, basename='ssa', t=None, workdir=None, jacobian=False,
                        _read_ms(_optional_text(target, basename, '_ms.dat')),
                        target, basename, ram=ram, generation=generation)
     finally:
-        if ram is not None and owns_sim and not keep_open:
-            try:
-                ram.endSim()
-            except RAMSESError:
-                # A run that already stopped, or one that failed before it
-                # started, has nothing to finalise. The failure worth reporting
-                # is the one on the way out of the try block, not this one.
-                pass
-        os.chdir(here)
+        # Nested, so the working directory comes back on every path. endSim
+        # reaches the engine through ctypes and can raise something other than
+        # RAMSESError; unnested, that would propagate out of this finally and
+        # leave the process sitting in target, silently relocating every
+        # relative path the caller uses afterwards.
+        try:
+            if ram is not None and owns_sim and not keep_open:
+                try:
+                    ram.endSim()
+                except RAMSESError:
+                    # A run that already stopped, or one that failed before it
+                    # started, has nothing to finalise. The failure worth
+                    # reporting is the one on the way out of the try block,
+                    # not this one.
+                    pass
+        finally:
+            os.chdir(here)

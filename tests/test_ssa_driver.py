@@ -59,9 +59,64 @@ def test_run_reproduces_kundur_example_12_6(tmp_path):
 
 def test_run_does_not_mutate_the_callers_case(tmp_path):
     case = kundur_case(tmp_path, "dyn_noPSS.dat")
-    before = list(case.getData())
+    before_data = list(case.getData())
+    before_dst = case.getDst()
     ssa.run(case, basename="ssa", workdir=tmp_path)
-    assert list(case.getData()) == before
+    assert list(case.getData()) == before_data
+    assert case.getDst() == before_dst
+
+
+def test_run_resolves_relative_input_paths_against_the_callers_directory(
+        tmp_path, monkeypatch):
+    """This is the whole reason _absolutise exists.
+
+    Every other test names its inputs absolutely, so a wrong entry in
+    _INPUT_LISTS would go unnoticed. Here the case is built with bare file
+    names from one directory and run in another, which only works if the
+    inputs were made absolute before the working directory changed.
+    """
+    data = tmp_path / "data"
+    data.mkdir()
+    for name in ("lf.dat", "dyn_noPSS.dat", "solveroptions.dat", "nothing.dst",
+                 "obs.dat"):
+        shutil.copy(CASE_DIR / name, data / name)
+    monkeypatch.chdir(data)
+
+    case = stepss.cfg()
+    case.addData("lf.dat")
+    case.addData("dyn_noPSS.dat")
+    case.addData("solveroptions.dat")
+    case.addDst("nothing.dst")
+    case.addObs("obs.dat")
+    case.addTrj("out.trj")
+
+    elsewhere = tmp_path / "run"
+    res = ssa.run(case, basename="ssa", workdir=elsewhere)
+    assert (elsewhere / "ssa_modes.dat").is_file()
+    assert len(res.modes) > 0
+    # The trajectory is an output and is deliberately not absolutised, so it
+    # lands in the run's directory rather than beside the caller.
+    assert (elsewhere / "out.trj").is_file()
+    assert not (data / "out.trj").exists()
+
+
+def test_a_refused_run_leaves_the_previous_run_intact(tmp_path):
+    """The refusals must all happen before the clearing step, not after.
+
+    Moving clear_previous_run above the collision refusal would pass every
+    other test in this file: a run that never starts must leave the previous
+    run's results where they were.
+    """
+    ssa.run(kundur_case(tmp_path, "dyn_noPSS.dat"), basename="ssa",
+            workdir=tmp_path)
+    good = (tmp_path / "ssa_modes.dat").read_text()
+
+    case = kundur_case(tmp_path, "dyn_noPSS.dat")
+    collision = tmp_path / ssa.settings_name("ssa")
+    case.addData(str(collision))
+    with pytest.raises(RAMSESError, match="loaded data file"):
+        ssa.run(case, basename="ssa", workdir=tmp_path)
+    assert (tmp_path / "ssa_modes.dat").read_text() == good
 
 
 def test_run_writes_the_settings_override_and_leaves_the_case_alone(tmp_path):
@@ -106,9 +161,13 @@ def test_run_generates_a_disturbance_file_when_the_case_has_none(tmp_path):
 
 def test_run_with_jacobian_writes_all_seven_members(tmp_path):
     case = kundur_case(tmp_path, "dyn_noPSS.dat")
-    ssa.run(case, basename="ssa", workdir=tmp_path, jacobian=True)
+    res = ssa.run(case, basename="ssa", workdir=tmp_path, jacobian=True)
     for name in ssa.members("ssa"):
         assert (tmp_path / name).is_file(), name
+    # The disturbance route retains a state matrix too, and bumps the counter
+    # itself. Reading it here is what proves both, since this route does not
+    # go through runSsa.
+    assert res.state_matrix.shape == (res.nstates, res.nstates)
 
 
 def test_run_without_jacobian_writes_only_the_results(tmp_path):
