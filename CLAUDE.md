@@ -213,8 +213,12 @@ them at, and both read and write the same `.ssa` archive format. A change to a
 field offset, the modes file's banner version, the archive's magic line or the
 set of files a run's `members()` produces has to move the engine's writer in
 `stepss-ramses/src/core/ssa.f90` and both readers in the same pass: the
-`_MODES_FIELDS`, `_PF_FIELDS` and `_MS_FIELDS` offsets and the archive code in
-`src/stepss/ssa.py` here, and `Columns.java` and `SsaArchive.java` in
-`stepss-java-ui/src/my/stepss/ssa/` on the other side. A reader left behind
-does not fail loudly: it keeps parsing the old layout and reports whatever
-happens to fall in the columns it is still reading.
+`_MODES_FIELDS`, `_PF_FIELDS` and `_MS_FIELDS` offsets in `src/stepss/ssa.py`
+here, the `FORMAT_VERSION` and `ARCHIVE_FORMAT_VERSION` constants and `members()`
+in the same file, and on the Java side the column offsets in `SsaModes.java`,
+`SsaParticipation.java` and `SsaModeShapes.java` (not `Columns.java`, which is a
+shared field-extraction helper holding no offsets), the modes banner `FORMAT_VERSION`
+in `SsaModes.java`, and the archive `FORMAT_VERSION` in `SsaArchive.java`: note that
+the archive constant is a separate number. A reader left behind does not fail
+loudly: it keeps parsing the old layout and reports whatever happens to fall in
+the columns it is still reading.
