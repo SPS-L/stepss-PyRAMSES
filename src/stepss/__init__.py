@@ -13,6 +13,7 @@ Public API exported by this package:
 - :class:`~stepss.extractor.cur` - lightweight NamedTuple holding a (time, value, msg) timeseries.
 - :func:`~stepss.extractor.curplot` - plot one or more :class:`cur` objects on a single axes.
 - :class:`~stepss.live.monitor` - plot chosen quantities while a simulation runs.
+- :mod:`stepss.ssa` - run and read a small-signal stability analysis.
 - :class:`~stepss.helios.HeliosSession` - run AC power flows with the Helios engine.
 - :class:`~stepss.globals.HeliosError` - exception raised by Helios calls.
 
@@ -40,12 +41,13 @@ from .simulator import sim
 from .extractor import extractor, curplot, cur
 from .live import monitor
 from . import helios
+from . import ssa
 from .helios import HeliosSession
 from ._bundled import RAMSES_VERSION as __ramses_version__
 from ._bundled import HELIOS_VERSION as __helios_version__
 
 __all__ = ["cfg", "sim", "extractor", "cur", "curplot", "monitor", "helios",
-           "HeliosSession", "HeliosError"]
+           "ssa", "HeliosSession", "HeliosError"]
 
 # No gnuplot probe. This package has always plotted with matplotlib, through
 # curplot; the probe existed because RAMSES used to draw run-time observables
