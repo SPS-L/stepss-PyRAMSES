@@ -57,6 +57,24 @@ def test_save_refuses_a_run_whose_modes_file_is_gone(res, tmp_path):
         ssa.save(res, tmp_path / "run.zip")
 
 
+def test_save_refuses_a_tar_whose_member_name_is_too_long(tmp_path):
+    """A basename this long pushes ``<basename>/<basename>_modes.dat`` past the
+    100-byte ustar name field; Java's SsaArchive refuses the same way."""
+    long_name = "n" * 45
+    run = tmp_path / "run"
+    run.mkdir()
+    for suffix in ("modes", "pf", "ms"):
+        shutil.copy(FIXTURES / ("kundur_nopss_%s.dat" % suffix),
+                    run / ("%s_%s.dat" % (long_name, suffix)))
+    long_res = ssa.load(run, long_name)
+    with pytest.raises(RAMSESError, match="100-byte"):
+        ssa.save(long_res, tmp_path / "run.tar.gz")
+    assert not (tmp_path / "run.tar.gz").exists()
+    # The zip path has no such limit, so the same run must still save that way.
+    ssa.save(long_res, tmp_path / "run.zip")
+    assert zipfile.is_zipfile(tmp_path / "run.zip")
+
+
 def test_load_archive_refuses_a_file_that_is_neither_format(tmp_path):
     plain = tmp_path / "run.zip"
     plain.write_text("not an archive")

@@ -45,6 +45,17 @@ import numpy as np
 
 from .globals import RAMSESError
 
+__all__ = [
+    'Results', 'ModeView', 'Participation', 'ModeShapeEntry', 'Manifest',
+    'run', 'load', 'basenames', 'save', 'load_archive',
+    'valid_basename', 'check_time', 'settings_text', 'settings_name',
+    'disturbance_text', 'disturbance_name', 'members', 'clear_previous_run',
+    'FORMAT_VERSION', 'ARCHIVE_FORMAT_VERSION', 'MANIFEST_NAME', 'MODE_DTYPE',
+    'RESULT_SUFFIXES', 'JACOBIAN_SUFFIXES', 'SETTINGS_SUFFIX',
+    'DISTURBANCE_SUFFIX', 'MIN_TIME', 'DEFAULT_REAL_LIMIT',
+    'DEFAULT_PF_FLOOR', 'DEFAULT_DAMPING_ZETA',
+]
+
 #: The one ``_modes.dat`` format version this module reads. RAMSES has written
 #: it since 3.79. v1 put a dominance flag exactly where v2 puts ``smp``, at the
 #: same width with the same two legal values, so a positional reader that
@@ -240,7 +251,8 @@ from a mode is below the run's ``pf_floor``, never zero.
 
 ModeShapeEntry = namedtuple('ModeShapeEntry',
                             'mode state magnitude angle_deg device')
-ModeShapeEntry.__doc__ = """One row of ``<base>_ms.dat``: a machine's rotor-speed phasor in one mode.
+ModeShapeEntry.__doc__ = """One row of ``<base>_ms.dat``: a machine's rotor-speed
+phasor in one mode.
 
 ``magnitude`` is normalised so the largest in the mode is 1, and ``angle_deg``
 is relative to that largest entry, because an eigenvector's absolute phase is
@@ -367,6 +379,20 @@ class ModeView(object):
         """
         return ModeView(self.results, self.rows[self.rows['re'] > real_limit])
 
+    def participation(self, mode, floor=DEFAULT_PF_FLOOR, allow_degenerate=False):
+        """See :meth:`Results.participation`. Resolves against this view's run.
+
+        :rtype: list of Participation
+        """
+        return self.results.participation(mode, floor, allow_degenerate)
+
+    def mode_shape(self, mode, allow_degenerate=False):
+        """See :meth:`Results.mode_shape`. Resolves against this view's run.
+
+        :rtype: list of ModeShapeEntry
+        """
+        return self.results.mode_shape(mode, allow_degenerate)
+
     def table(self):
         """Print one line per mode: index, frequency, damping ratio, lambda, simplicity.
 
@@ -473,8 +499,10 @@ class ModeView(object):
         if live:
             _attach_splane_interaction(ax, self, (lo_re, hi_re, lo_im, hi_im))
         elif interactive is None:
-            print('s-plane drawn without interaction: this backend has no window '
-                  'to update. Use %matplotlib widget for click-to-select and '
+            print('s-plane drawn without interaction: this backend has no '
+                  'window to update. In a script, switch to an interactive '
+                  'backend before plotting; in a notebook, run %matplotlib '
+                  'widget first. Either gives click-to-select and '
                   'drag-to-zoom.')
         return ax
 
@@ -517,9 +545,14 @@ class Results(object):
     def view(self):
         """Every mode, as a selection.
 
+        A copy of :attr:`modes`, so mutating the returned view's ``rows``
+        cannot corrupt this run's own copy, the same protection
+        :meth:`electromechanical` and :meth:`dominant` already have by
+        filtering into a new array.
+
         :rtype: ModeView
         """
-        return ModeView(self, self.modes)
+        return ModeView(self, self.modes.copy())
 
     def electromechanical(self, lo=0.1, hi=2.5):
         """See :meth:`ModeView.electromechanical`.
@@ -538,18 +571,30 @@ class Results(object):
     def _index_of(self, mode):
         """The mode index named by an int or by a row of :attr:`modes`.
 
+        Checked against :attr:`modes` before it is handed back, so that a
+        stale or made-up index is refused here rather than silently producing
+        an empty plot or an empty list that reads as a real mode with nothing
+        to show.
+
         :param mode: a 1-based mode index, or a row of :attr:`modes`
         :returns: the index
         :rtype: int
-        :raises RAMSESError: if *mode* is neither
+        :raises RAMSESError: if *mode* is neither, or names no mode in this run
         """
         if isinstance(mode, (int, np.integer)):
-            return int(mode)
-        try:
-            return int(mode['index'])
-        except (TypeError, ValueError, IndexError, KeyError):
-            raise RAMSESError('RAMSES: %r is neither a mode index nor a row of '
-                              '.modes' % (mode,))
+            index = int(mode)
+        else:
+            try:
+                index = int(mode['index'])
+            except (TypeError, ValueError, IndexError, KeyError):
+                raise RAMSESError('RAMSES: %r is neither a mode index nor a '
+                                  'row of .modes' % (mode,))
+        if index not in self.modes['index']:
+            raise RAMSESError(
+                'RAMSES: mode %d is not in this run; valid indices are %d to '
+                '%d.' % (index, int(self.modes['index'].min()),
+                         int(self.modes['index'].max())))
+        return index
 
     def _check_simple(self, index, allow_degenerate):
         """Refuse a degenerate mode unless the caller insists.
@@ -608,6 +653,20 @@ class Results(object):
         index = self._index_of(mode)
         self._check_simple(index, allow_degenerate)
         return list(self._shapes.get(index, []))
+
+    @property
+    def ram(self):
+        """The simulator this run was made with.
+
+        None for a run read from disk, such as one returned by :func:`load` or
+        :func:`load_archive`. For a run made by :func:`run` with
+        ``keep_open=True``, this is the live simulator, left paused rather
+        than finalised, and it is the caller's to finalise with
+        :meth:`~stepss.simulator.sim.endSim` when they are done with it.
+
+        :rtype: stepss.simulator.sim or None
+        """
+        return self._ram
 
     @property
     def state_matrix(self):
@@ -986,12 +1045,14 @@ def disturbance_name(basename):
 def disturbance_text(t):
     """A disturbance file carrying no events, ending just after *t*.
 
-    A disturbance file is mandatory even when the analysis is injected from
-    Python, and this one deliberately carries no events: the engine linearises
-    about whatever state the system is in when the analysis fires, so an event
-    before then would describe that instant rather than an operating point.
-    Running to a later time with no events lets the initialisation settle and
-    linearises about the same operating point.
+    A disturbance file is mandatory because the case format requires one,
+    regardless of how the analysis is run; :func:`run` generates this one when
+    the case it is given carries none of its own. It deliberately carries no
+    events: the engine linearises about whatever state the system is in when
+    the analysis fires, so an event before then would describe that instant
+    rather than an operating point. Running to a later time with no events
+    lets the initialisation settle and linearises about the same operating
+    point.
 
     :param float t: the analysis time in seconds
     :returns: the file text, newline terminated
@@ -1154,6 +1215,8 @@ def run(case, basename='ssa', t=None, workdir=None, jacobian=False,
                            never finalised here whatever this is set to, on the
                            principle of not closing what you did not open, and
                            is the caller's to :meth:`~stepss.simulator.sim.endSim`.
+                           Either way, the simulator is reachable afterwards as
+                           :attr:`Results.ram`, which is where that call goes.
     :returns: the run
     :rtype: Results
 
@@ -1202,16 +1265,21 @@ def run(case, basename='ssa', t=None, workdir=None, jacobian=False,
         os.makedirs(target)
 
     settings_path = os.path.join(target, settings_name(basename))
-    # Refused rather than written: a loaded data file of this name is the
-    # caller's, and writing over it would destroy it silently, the run
-    # continuing on the two records that replaced their case.
+    # Refused rather than written or deleted: a loaded data file bearing one
+    # of these names is the caller's, and this run would either write over it
+    # (the settings file) or, for a name from members(), have
+    # clear_previous_run delete it before the engine writes its replacement.
+    # Either way the caller's file is destroyed silently.
+    guarded_paths = [settings_path] + [os.path.join(target, name)
+                                       for name in members(basename)]
     for data_file in prepared.getData():
-        if _same_file(data_file, settings_path):
-            raise RAMSESError(
-                'RAMSES: the run needs to write %s, which is one of the loaded '
-                'data files. Choose a different results basename, or move that '
-                'file, so the analysis does not overwrite it.'
-                % os.path.basename(settings_path))
+        for guarded_path in guarded_paths:
+            if _same_file(data_file, guarded_path):
+                raise RAMSESError(
+                    'RAMSES: the run needs to write %s, which is one of the '
+                    'loaded data files. Choose a different results basename, '
+                    'or move that file, so the analysis does not overwrite it.'
+                    % os.path.basename(guarded_path))
 
     owns_sim = ram is None
     os.chdir(target)
@@ -1244,6 +1312,13 @@ def run(case, basename='ssa', t=None, workdir=None, jacobian=False,
             # that order within one step (simul_decomp: dump_jacobian then
             # dump_eig), so the dumped Jacobian is necessarily the one the
             # analysis reduced rather than one taken a moment later.
+            #
+            # This route carries no equivalent of runSsa's "time already
+            # passed" refusal, and it cannot be reached here: execSim(prepared,
+            # 0.0) just above always resets the clock to 0, and when is at
+            # least MIN_TIME, so when > ram.getSimTime() always holds and
+            # contSim() always runs. The two routes are not disagreeing; the
+            # check is simply moot on this one.
             if when > ram.getSimTime():
                 ram.contSim(when)
             ram.addDisturb(when, "JAC '%s'" % basename)
@@ -1446,6 +1521,10 @@ def save(results, path, saved_by=None):
                         saved_by or ('stepss %s' % __version__)).text()
     target = str(path)
     prefix = basename + '/'
+    if _is_tar_name(target):
+        # Refused before anything is written, on the tar path only: the Java
+        # writer (SsaArchive.java) refuses the same way for the same reason.
+        _check_tar_names(prefix, [MANIFEST_NAME] + present)
     # Written to a .part file and moved into place, as the Java side does.
     # A failure partway through, a full disk or a permission error, would
     # otherwise leave a truncated file at the requested path that looks like
@@ -1540,6 +1619,32 @@ def _is_tar_name(name):
     """
     lower = name.lower()
     return lower.endswith('.tar.gz') or lower.endswith('.tgz')
+
+
+def _check_tar_names(prefix, names):
+    """Refuse a member name a ustar header cannot hold.
+
+    A ustar name field is 100 bytes. Past that, CPython's ``tarfile`` does not
+    refuse: it falls back to a PAX extended header, which the graphical
+    interface's own unpacker does not read, since it skips PAX headers and
+    extracts every later member's truncated ustar name over the one before it.
+    A long basename would therefore write an archive that looks fine here and
+    loses data there. Checked before anything is written, so both writers
+    refuse the same basenames.
+
+    :param str prefix: the archive's top-level directory, with trailing slash
+    :param names: the member names about to be written, with no directory part
+    :type names: iterable of str
+    :raises RAMSESError: if a resulting member name would exceed 100 bytes
+    """
+    for name in names:
+        full = prefix + name
+        length = len(full.encode('utf-8'))
+        if length > 100:
+            raise RAMSESError(
+                'RAMSES: the name "%s" is %d bytes, past the 100-byte limit a '
+                'tar archive member name can hold. Save as .zip, or use a '
+                'shorter basename.' % (full, length))
 
 
 def _tar_add_bytes(archive, name, payload):

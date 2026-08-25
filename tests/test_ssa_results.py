@@ -115,6 +115,37 @@ def test_index_of_refuses_something_that_is_neither(res):
         res._index_of("mode 3")
 
 
+def test_index_of_refuses_an_index_not_in_this_run(res):
+    with pytest.raises(RAMSESError, match="not in this run"):
+        res._index_of(99999)
+
+
+def test_participation_refuses_an_index_not_in_this_run(res):
+    with pytest.raises(RAMSESError, match="not in this run"):
+        res.participation(99999)
+
+
+def test_mode_shape_refuses_an_index_not_in_this_run(res):
+    with pytest.raises(RAMSESError, match="not in this run"):
+        res.mode_shape(99999)
+
+
+def test_view_participation_delegates_to_the_run(res):
+    view = res.electromechanical()
+    assert view.participation(view[0]) == res.participation(view[0])
+
+
+def test_view_mode_shape_delegates_to_the_run(res):
+    view = res.electromechanical()
+    assert view.mode_shape(view[0]) == res.mode_shape(view[0])
+
+
+def test_view_copies_so_mutating_rows_does_not_corrupt_modes(res):
+    before = float(res.modes["re"][0])
+    res.view().rows["re"][0] = 999.0
+    assert float(res.modes["re"][0]) == before
+
+
 def test_table_and_summary_print_something(res, capsys):
     res.summary()
     res.electromechanical().table()

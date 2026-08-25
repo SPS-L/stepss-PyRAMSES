@@ -204,3 +204,17 @@ here under a named secret. Both are contracts with `stepss-ramses` and
 under a dropped secret name 401s upstream without this repo hearing anything.
 Change both sides in the same pass, and remember that a renamed asset only
 exists on releases cut *after* the rename.
+
+The small-signal results files are the same kind of contract, with two readers
+rather than one build script. `src/stepss/ssa.py` here and `my.stepss.ssa` in
+`stepss-java-ui` both parse `<basename>_modes.dat`, `<basename>_pf.dat` and
+`<basename>_ms.dat` at the fixed column offsets the engine's `ssa.f90` writes
+them at, and both read and write the same `.ssa` archive format. A change to a
+field offset, the modes file's banner version, the archive's magic line or the
+set of files a run's `members()` produces has to move the engine's writer in
+`stepss-ramses/src/core/ssa.f90` and both readers in the same pass: the
+`_MODES_FIELDS`, `_PF_FIELDS` and `_MS_FIELDS` offsets and the archive code in
+`src/stepss/ssa.py` here, and `Columns.java` and `SsaArchive.java` in
+`stepss-java-ui/src/my/stepss/ssa/` on the other side. A reader left behind
+does not fail loudly: it keeps parsing the old layout and reports whatever
+happens to fall in the columns it is still reading.

@@ -160,6 +160,17 @@ def test_run_refuses_a_basename_colliding_with_a_data_file(tmp_path):
     assert collision.read_text() == "$SCHEME DE                         ;\n"
 
 
+def test_run_refuses_a_basename_colliding_with_a_results_member(tmp_path):
+    """clear_previous_run must not be allowed to delete a caller's own data file."""
+    case = kundur_case(tmp_path, "dyn_noPSS.dat")
+    collision = tmp_path / "ssa_modes.dat"
+    collision.write_text("not really a results file\n")
+    case.addData(str(collision))
+    with pytest.raises(RAMSESError, match="loaded data file"):
+        ssa.run(case, basename="ssa", workdir=tmp_path)
+    assert collision.read_text() == "not really a results file\n"
+
+
 def test_run_generates_a_disturbance_file_when_the_case_has_none(tmp_path):
     case = kundur_case(tmp_path, "dyn_noPSS.dat")
     case.clearDst()
@@ -232,3 +243,18 @@ def test_state_matrix_is_absent_from_results_read_from_disk(tmp_path):
     reloaded = ssa.load(tmp_path, "ssa")
     with pytest.raises(RAMSESError, match="live run"):
         reloaded.state_matrix
+
+
+def test_ram_is_the_live_simulator_when_kept_open(tmp_path):
+    """The caller's only handle for endSim() when keep_open=True is Results.ram."""
+    case = kundur_case(tmp_path, "dyn_noPSS.dat")
+    res = ssa.run(case, basename="ssa", workdir=tmp_path, keep_open=True)
+    assert isinstance(res.ram, stepss.sim)
+    res.ram.endSim()
+
+
+def test_ram_is_none_for_a_run_read_from_disk(tmp_path):
+    case = kundur_case(tmp_path, "dyn_noPSS.dat")
+    ssa.run(case, basename="ssa", workdir=tmp_path)
+    reloaded = ssa.load(tmp_path, "ssa")
+    assert reloaded.ram is None

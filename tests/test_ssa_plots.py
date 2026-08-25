@@ -78,5 +78,15 @@ def test_mode_shape_plot_refuses_a_degenerate_mode(res):
         res.mode_shape_plot(degenerate)
 
 
+def test_mode_shape_plot_refuses_an_index_not_in_this_run(res):
+    with pytest.raises(RAMSESError, match="not in this run"):
+        res.mode_shape_plot(99999)
+
+
 def test_participation_plot_returns_an_axes_with_bars(res):
     assert res.participation_plot(interarea(res)).patches
+
+
+def test_participation_plot_refuses_an_index_not_in_this_run(res):
+    with pytest.raises(RAMSESError, match="not in this run"):
+        res.participation_plot(99999)
