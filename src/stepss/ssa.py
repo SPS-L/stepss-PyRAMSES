@@ -219,3 +219,80 @@ def _read_modes(text):
     header['nalg'] = None if header['nalg'] is None else int(header['nalg'])
     header['format_version'] = version
     return np.array(rows, dtype=MODE_DTYPE), header
+
+
+_PF_FIELDS = ((0, 8), (9, 17), (18, 42), (43, 51), (52, 72), (73, 93))
+_MS_FIELDS = ((0, 8), (9, 17), (18, 42), (43, 67), (68, 88))
+
+Participation = namedtuple('Participation',
+                           'mode state pf family device variable')
+Participation.__doc__ = """One row of ``<base>_pf.dat``.
+
+``pf`` is the participation factor, normalised so that the largest in each mode
+is exactly 1. ``family`` is one of SYN, TOR, EXC, INJ, DCTL. A device absent
+from a mode is below the run's ``pf_floor``, never zero.
+"""
+
+ModeShapeEntry = namedtuple('ModeShapeEntry',
+                            'mode state magnitude angle_deg device')
+ModeShapeEntry.__doc__ = """One row of ``<base>_ms.dat``: a machine's rotor-speed phasor in one mode.
+
+``magnitude`` is normalised so the largest in the mode is 1, and ``angle_deg``
+is relative to that largest entry, because an eigenvector's absolute phase is
+arbitrary and would otherwise vary from run to run.
+"""
+
+
+def _read_pf(text):
+    """Parse ``<base>_pf.dat``, indexed by mode.
+
+    Rows within a mode are sorted by participation factor, largest first.
+
+    :param str text: the file's contents, or '' when the file is absent
+    :returns: mode index to list of :class:`Participation`
+    :rtype: dict
+    :raises RAMSESError: if a field does not parse
+    """
+    by_mode = {}
+    for i, line in enumerate(text.splitlines()):
+        if not line.strip() or line[0] == '#':
+            continue
+        lineno = i + 1
+        row = Participation(
+            _int(line, _PF_FIELDS[0][0], _PF_FIELDS[0][1], lineno),
+            _int(line, _PF_FIELDS[1][0], _PF_FIELDS[1][1], lineno),
+            _num(line, _PF_FIELDS[2][0], _PF_FIELDS[2][1], lineno),
+            _slice(line, _PF_FIELDS[3][0], _PF_FIELDS[3][1]).strip(),
+            _slice(line, _PF_FIELDS[4][0], _PF_FIELDS[4][1]),
+            _slice(line, _PF_FIELDS[5][0], _PF_FIELDS[5][1]).strip())
+        by_mode.setdefault(row.mode, []).append(row)
+    for rows in by_mode.values():
+        rows.sort(key=lambda r: r.pf, reverse=True)
+    return by_mode
+
+
+def _read_ms(text):
+    """Parse ``<base>_ms.dat``, indexed by mode.
+
+    File order is kept, which is state order, because the phase reference is
+    the largest-magnitude entry and reordering would obscure which machine that
+    was.
+
+    :param str text: the file's contents, or '' when the file is absent
+    :returns: mode index to list of :class:`ModeShapeEntry`
+    :rtype: dict
+    :raises RAMSESError: if a field does not parse
+    """
+    by_mode = {}
+    for i, line in enumerate(text.splitlines()):
+        if not line.strip() or line[0] == '#':
+            continue
+        lineno = i + 1
+        row = ModeShapeEntry(
+            _int(line, _MS_FIELDS[0][0], _MS_FIELDS[0][1], lineno),
+            _int(line, _MS_FIELDS[1][0], _MS_FIELDS[1][1], lineno),
+            _num(line, _MS_FIELDS[2][0], _MS_FIELDS[2][1], lineno),
+            _num(line, _MS_FIELDS[3][0], _MS_FIELDS[3][1], lineno),
+            _slice(line, _MS_FIELDS[4][0], _MS_FIELDS[4][1]))
+        by_mode.setdefault(row.mode, []).append(row)
+    return by_mode

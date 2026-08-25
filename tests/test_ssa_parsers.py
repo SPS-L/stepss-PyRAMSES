@@ -108,3 +108,66 @@ def test_read_modes_refuses_a_file_with_no_banner():
 def test_read_modes_refuses_a_banner_with_no_rows():
     with pytest.raises(RAMSESError, match="no mode rows"):
         ssa._read_modes(V2_HEADER)
+
+
+def pf_line(mode, state, pf, family, device, variable):
+    """One row at the offsets (i8,1x,i8,1x,en24.15,1x,a8,1x,a20,1x,a20) produces."""
+    return "%8d %8d %s %-8s %-20s %-20s" % (mode, state, en(pf), family, device,
+                                            variable)
+
+
+def ms_line(mode, state, magnitude, angle_deg, device):
+    """One row at the offsets (i8,1x,i8,1x,2(en24.15,1x),a20) produces."""
+    return "%8d %8d %s %s %-20s" % (mode, state, en(magnitude), en(angle_deg),
+                                    device)
+
+
+def test_read_pf_parses_the_engines_own_output():
+    rows = ssa._read_pf((FIXTURES / "kundur_nopss_pf.dat").read_text())
+    assert rows
+    # Normalisation puts one entry at exactly 1 in every mode, so no mode can
+    # be emptied by the floor: a mode missing from a v2 file means the file is
+    # incomplete.
+    for entries in rows.values():
+        assert max(e.pf for e in entries) == pytest.approx(1.0)
+        assert [e.pf for e in entries] == sorted((e.pf for e in entries),
+                                                 reverse=True)
+    assert any(e.variable == "omega" for entries in rows.values() for e in entries)
+
+
+def test_read_pf_keeps_a_device_name_with_an_embedded_blank():
+    """Splitting on whitespace shifts every field after such a name."""
+    text = ("# STEPSS SSA participation factors v2\n"
+            + pf_line(3, 7, 0.5, "SYN", "g 1", "omega") + "\n")
+    rows = ssa._read_pf(text)
+    assert rows[3][0].device == "g 1"
+    assert rows[3][0].variable == "omega"
+    assert rows[3][0].family == "SYN"
+
+
+def test_read_pf_keeps_a_leading_blank_in_a_device_name():
+    text = ("# STEPSS SSA participation factors v2\n"
+            + pf_line(3, 7, 0.5, "SYN", " g1", "omega") + "\n")
+    assert ssa._read_pf(text)[3][0].device == " g1"
+
+
+def test_read_pf_of_an_empty_file_is_empty():
+    assert ssa._read_pf("") == {}
+
+
+def test_read_ms_parses_the_engines_own_output():
+    rows = ssa._read_ms((FIXTURES / "kundur_nopss_ms.dat").read_text())
+    assert rows
+    for entries in rows.values():
+        assert max(e.magnitude for e in entries) == pytest.approx(1.0)
+        # Angles are relative to the largest entry, which therefore sits at 0.
+        reference = max(entries, key=lambda e: e.magnitude)
+        assert reference.angle_deg == pytest.approx(0.0, abs=1e-9)
+
+
+def test_read_ms_keeps_file_order():
+    """File order is state order, and the phase reference is a row in it."""
+    text = ("# STEPSS SSA mode shapes v2\n"
+            + ms_line(1, 9, 0.4, -178.0, "g4") + "\n"
+            + ms_line(1, 3, 1.0, 0.0, "g1") + "\n")
+    assert [e.device for e in ssa._read_ms(text)[1]] == ["g4", "g1"]
