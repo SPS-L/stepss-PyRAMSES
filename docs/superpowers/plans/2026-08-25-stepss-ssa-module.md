@@ -2800,7 +2800,7 @@ def test_load_archive_refuses_an_unusable_basename(tmp_path):
         ssa.load_archive(target)
 
 
-def test_load_archive_refuses_an_entry_that_escapes_the_destination(tmp_path):
+def test_load_archive_refuses_a_tar_entry_that_escapes_the_destination(tmp_path):
     payload = tmp_path / "payload"
     payload.write_text("x")
     target = tmp_path / "run.tar.gz"
@@ -2808,6 +2808,23 @@ def test_load_archive_refuses_an_entry_that_escapes_the_destination(tmp_path):
         archive.add(payload, arcname="../escaped.dat")
     with pytest.raises(RAMSESError, match="outside"):
         ssa.load_archive(target)
+
+
+def test_load_archive_refuses_a_zip_entry_that_escapes_the_destination(tmp_path):
+    """The zip branch is the one where _safe_child is the only protection.
+
+    tarfile's filter='data' would refuse this on its own, so the tar test above
+    passes even with the guard removed. zipfile has no equivalent: a bare
+    extractall writes ../escaped.dat outside the destination and reports
+    nothing. This test is therefore the only thing standing behind _safe_child
+    on the branch where it matters most.
+    """
+    target = tmp_path / "run.zip"
+    with zipfile.ZipFile(target, "w") as archive:
+        archive.writestr("../escaped.dat", "x")
+    with pytest.raises(RAMSESError, match="outside"):
+        ssa.load_archive(target)
+    assert not (tmp_path.parent / "escaped.dat").exists()
 
 
 def test_manifest_omits_absent_keys():
@@ -3001,17 +3018,33 @@ def save(results, path, saved_by=None):
                         saved_by or ('stepss %s' % __version__)).text()
     target = str(path)
     prefix = basename + '/'
-    if _is_tar_name(target):
-        with tarfile.open(target, 'w:gz') as archive:
-            _tar_add_bytes(archive, prefix + MANIFEST_NAME,
-                           manifest.encode('utf-8'))
-            for name in present:
-                archive.add(os.path.join(directory, name), arcname=prefix + name)
-    else:
-        with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr(prefix + MANIFEST_NAME, manifest)
-            for name in present:
-                archive.write(os.path.join(directory, name), arcname=prefix + name)
+    # Written to a .part file and moved into place, as the Java side does.
+    # A failure partway through, a full disk or a permission error, would
+    # otherwise leave a truncated file at the requested path that looks like
+    # an archive until someone tries to open it.
+    part = target + '.part'
+    try:
+        if _is_tar_name(target):
+            with tarfile.open(part, 'w:gz') as archive:
+                _tar_add_bytes(archive, prefix + MANIFEST_NAME,
+                               manifest.encode('utf-8'))
+                for name in present:
+                    archive.add(os.path.join(directory, name),
+                                arcname=prefix + name)
+        else:
+            with zipfile.ZipFile(part, 'w', zipfile.ZIP_DEFLATED) as archive:
+                archive.writestr(prefix + MANIFEST_NAME, manifest)
+                for name in present:
+                    archive.write(os.path.join(directory, name),
+                                  arcname=prefix + name)
+        os.replace(part, target)
+    except BaseException:
+        # Nothing survives a failure, so a retry starts from a clean slate.
+        # BaseException rather than Exception: an interrupt partway through a
+        # write leaves the same debris as an error does.
+        if os.path.exists(part):
+            os.remove(part)
+        raise
     return absent
 
 
