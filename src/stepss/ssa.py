@@ -296,3 +296,315 @@ def _read_ms(text):
             _slice(line, _MS_FIELDS[4][0], _MS_FIELDS[4][1]))
         by_mode.setdefault(row.mode, []).append(row)
     return by_mode
+
+
+class ModeView(object):
+    """A selection of modes, still attached to the run they came from.
+
+    Filters return one of these rather than a bare array so that they compose,
+    and so that the run's participation factors and mode shapes stay reachable
+    through the selection.
+    """
+
+    def __init__(self, results, rows):
+        """:param Results results: the run these modes came from
+        :param numpy.ndarray rows: a :data:`MODE_DTYPE` array
+        """
+        self.results = results
+        self.rows = rows
+
+    def __len__(self):
+        return len(self.rows)
+
+    def __getitem__(self, item):
+        return self.rows[item]
+
+    def __iter__(self):
+        return iter(self.rows)
+
+    @property
+    def lam(self):
+        """The eigenvalues as a complex array.
+
+        :rtype: numpy.ndarray
+        """
+        return self.rows['re'] + 1j * self.rows['im']
+
+    def electromechanical(self, lo=0.1, hi=2.5):
+        """The rotor band, one member of each conjugate pair, sorted by frequency.
+
+        Rotor oscillations sit roughly between 0.1 and 2.5 Hz; below that are
+        slow controller modes and above it exciter and network dynamics. The
+        ``Im > 0`` test is what collapses each conjugate pair to a single row,
+        since the two members are one physical oscillation.
+
+        :param float lo: lower frequency bound in Hz, exclusive
+        :param float hi: upper frequency bound in Hz, exclusive
+        :returns: the selection
+        :rtype: ModeView
+        """
+        sel = ((self.rows['freq'] > lo) & (self.rows['freq'] < hi)
+               & (self.rows['im'] > 0.0))
+        kept = self.rows[sel]
+        return ModeView(self.results, kept[np.argsort(kept['freq'], kind='stable')])
+
+    def dominant(self, real_limit=DEFAULT_REAL_LIMIT):
+        """The modes whose real part is above ``real_limit``.
+
+        Strictly greater than, which is what the engine's retired
+        ``real_limit`` was, so a given limit selects exactly the modes it would
+        have selected before. Input order is preserved, so composing this after
+        :meth:`electromechanical` keeps that method's sort.
+
+        :param float real_limit: the limit, in 1/s
+        :returns: the selection
+        :rtype: ModeView
+        """
+        return ModeView(self.results, self.rows[self.rows['re'] > real_limit])
+
+    def table(self):
+        """Print one line per mode: index, frequency, damping ratio, lambda, simplicity.
+
+        .. note:: This prints and returns None. Use :meth:`to_frame` or
+                  :attr:`rows` to work with the values.
+        """
+        print('  %-6s %-9s %-11s %-26s %s'
+              % ('mode', 'f [Hz]', 'zeta', 'lambda', 'simple'))
+        for row in self.rows:
+            print('  %-6d %-9.4f %-+11.4f %-26s %s'
+                  % (row['index'], row['freq'], row['zeta'],
+                     '%+.4f %+.4fj' % (row['re'], row['im']),
+                     'yes' if row['simple'] else 'NO'))
+
+    def to_frame(self):
+        """The same rows as a pandas DataFrame.
+
+        :rtype: pandas.DataFrame
+        :raises RAMSESError: if pandas is not installed. It is not a dependency
+                             of this package, which is why this is the only
+                             place that imports it.
+        """
+        try:
+            import pandas
+        except ImportError:
+            raise RAMSESError('RAMSES: to_frame() needs pandas, which stepss does '
+                              'not depend on. Install it, or use .rows.')
+        return pandas.DataFrame(self.rows)
+
+
+class Results(object):
+    """One small-signal run: the three files the engine wrote, and its header.
+
+    ``_pf.dat`` and ``_ms.dat`` are optional and load as empty when absent,
+    because their absence is not a reason to refuse the run that is present.
+    """
+
+    def __init__(self, modes, header, participation, shapes, directory,
+                 basename, ram=None, generation=None):
+        """:param numpy.ndarray modes: a :data:`MODE_DTYPE` array
+        :param dict header: as :func:`_read_modes` returns
+        :param dict participation: as :func:`_read_pf` returns
+        :param dict shapes: as :func:`_read_ms` returns
+        :param str directory: where the files were read from
+        :param str basename: the run's basename
+        :param ram: the simulator this run was made with, for the state matrix
+        :type ram: stepss.simulator.sim or None
+        :param generation: the value of the simulator's analysis counter when
+                           this run was produced
+        :type generation: int or None
+        """
+        self.modes = modes
+        self.nstates = header['nstates']
+        self.nalg = header['nalg']
+        self.time = header['time']
+        self.pf_floor = header['pf_floor']
+        self.gap_tol = header['gap_tol']
+        self.format_version = header['format_version']
+        self.directory = str(directory)
+        self.basename = basename
+        self._participation = participation
+        self._shapes = shapes
+        self._ram = ram
+        self._generation = generation
+
+    def view(self):
+        """Every mode, as a selection.
+
+        :rtype: ModeView
+        """
+        return ModeView(self, self.modes)
+
+    def electromechanical(self, lo=0.1, hi=2.5):
+        """See :meth:`ModeView.electromechanical`.
+
+        :rtype: ModeView
+        """
+        return self.view().electromechanical(lo, hi)
+
+    def dominant(self, real_limit=DEFAULT_REAL_LIMIT):
+        """See :meth:`ModeView.dominant`.
+
+        :rtype: ModeView
+        """
+        return self.view().dominant(real_limit)
+
+    def _index_of(self, mode):
+        """The mode index named by an int or by a row of :attr:`modes`.
+
+        :param mode: a 1-based mode index, or a row of :attr:`modes`
+        :returns: the index
+        :rtype: int
+        :raises RAMSESError: if *mode* is neither
+        """
+        if isinstance(mode, (int, np.integer)):
+            return int(mode)
+        try:
+            return int(mode['index'])
+        except (TypeError, ValueError, IndexError, KeyError):
+            raise RAMSESError('RAMSES: %r is neither a mode index nor a row of '
+                              '.modes' % (mode,))
+
+    def _check_simple(self, index, allow_degenerate):
+        """Refuse a degenerate mode unless the caller insists.
+
+        In a degenerate eigenspace the individual eigenvectors are not unique,
+        so participation factors and mode shapes are basis-dependent: they are
+        real numbers that mean nothing physically and would come out
+        differently on another LAPACK build. The graphical interface declines
+        to show either, and so does this by default.
+
+        :param int index: the mode index
+        :param bool allow_degenerate: return the rows anyway
+        :raises RAMSESError: if the mode is degenerate and *allow_degenerate*
+                             is False
+        """
+        if allow_degenerate:
+            return
+        row = self.modes[self.modes['index'] == index]
+        if len(row) and not row['simple'][0]:
+            raise RAMSESError(
+                'RAMSES: mode %d is degenerate (simple = 0). Its eigenvectors '
+                'are not unique, so its participation factors and mode shape '
+                'are basis-dependent and would come out differently on another '
+                'machine. Pass allow_degenerate=True to read them anyway.'
+                % index)
+
+    def participation(self, mode, floor=DEFAULT_PF_FLOOR, allow_degenerate=False):
+        """Participation factors for one mode, largest first.
+
+        ``floor`` is applied here and not by the engine. The file carries every
+        entry above the run's own :attr:`pf_floor`, so lowering this shows more
+        without re-running anything, down to that floor. Only below it is an
+        entry genuinely absent from the file rather than merely filtered here.
+
+        :param mode: a mode index, or a row of :attr:`modes`
+        :param float floor: smallest participation factor to return
+        :param bool allow_degenerate: read a degenerate mode anyway
+        :returns: the rows
+        :rtype: list of Participation
+        :raises RAMSESError: if the mode is degenerate and not allowed
+        """
+        index = self._index_of(mode)
+        self._check_simple(index, allow_degenerate)
+        return [row for row in self._participation.get(index, [])
+                if row.pf >= floor]
+
+    def mode_shape(self, mode, allow_degenerate=False):
+        """The rotor-speed phasor of each machine in one mode, in state order.
+
+        :param mode: a mode index, or a row of :attr:`modes`
+        :param bool allow_degenerate: read a degenerate mode anyway
+        :returns: the rows
+        :rtype: list of ModeShapeEntry
+        :raises RAMSESError: if the mode is degenerate and not allowed
+        """
+        index = self._index_of(mode)
+        self._check_simple(index, allow_degenerate)
+        return list(self._shapes.get(index, []))
+
+    def summary(self):
+        """Print the run's header and its mode counts.
+
+        .. note:: This prints and returns None.
+        """
+        print('%s in %s' % (self.basename, self.directory))
+        print('  %d states, %d algebraic variables, modes file v%d'
+              % (self.nstates or 0, self.nalg or 0, self.format_version))
+        if self.time is not None:
+            print('  linearised at t = %g s' % self.time)
+        print('  %d modes, %d simple, %d degenerate'
+              % (len(self.modes), int(self.modes['simple'].sum()),
+                 int((~self.modes['simple']).sum())))
+        if self.pf_floor is not None:
+            print('  participation written down to %g ($PF_THRES)' % self.pf_floor)
+
+
+def load(directory, basename):
+    """Read one run from disk, whatever produced it.
+
+    :param directory: the directory holding the run
+    :type directory: str or pathlib.Path
+    :param str basename: the run's basename
+    :returns: the run
+    :rtype: Results
+    :raises RAMSESError: if the modes file is absent or does not parse
+    """
+    directory = str(directory)
+    modes_path = os.path.join(directory, basename + RESULT_SUFFIXES[0])
+    if not os.path.isfile(modes_path):
+        raise RAMSESError('RAMSES: no %s%s in %s'
+                          % (basename, RESULT_SUFFIXES[0], directory))
+    modes, header = _read_modes(_read_text(modes_path))
+    return Results(modes, header,
+                   _read_pf(_optional_text(directory, basename, '_pf.dat')),
+                   _read_ms(_optional_text(directory, basename, '_ms.dat')),
+                   directory, basename)
+
+
+def basenames(directory):
+    """Every basename in *directory* for which a modes file exists, sorted.
+
+    A directory named ``<x>_modes.dat`` is not offered, because it would then
+    be refused by :func:`load` about a name that plainly exists.
+
+    :param directory: the directory to look in
+    :type directory: str or pathlib.Path
+    :returns: the basenames
+    :rtype: list of str
+    """
+    directory = str(directory)
+    suffix = RESULT_SUFFIXES[0]
+    found = []
+    try:
+        names = os.listdir(directory)
+    except OSError:
+        return found
+    for name in names:
+        if (name.endswith(suffix) and len(name) > len(suffix)
+                and os.path.isfile(os.path.join(directory, name))):
+            found.append(name[:-len(suffix)])
+    return sorted(found)
+
+
+def _read_text(path):
+    """The whole of a text file, decoded as UTF-8.
+
+    :param str path: the file
+    :returns: its contents
+    :rtype: str
+    """
+    with open(path, 'r', encoding='utf-8', errors='replace') as handle:
+        return handle.read()
+
+
+def _optional_text(directory, basename, suffix):
+    """The contents of an optional results file, or '' when it is absent.
+
+    :param str directory: the run's directory
+    :param str basename: the run's basename
+    :param str suffix: the file suffix, including its leading underscore
+    :returns: the contents, or ''
+    :rtype: str
+    """
+    path = os.path.join(str(directory), basename + suffix)
+    return _read_text(path) if os.path.isfile(path) else ''
