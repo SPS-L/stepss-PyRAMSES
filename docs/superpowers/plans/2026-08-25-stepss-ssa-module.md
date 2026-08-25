@@ -2800,8 +2800,28 @@ def test_load_archive_refuses_an_unusable_basename(tmp_path):
         ssa.load_archive(target)
 
 
+def assert_refused_before_unpacking(target, into):
+    """Assert that *target* is refused by this module, before it unpacks.
+
+    Three assertions in this order, because the order is what makes each one
+    discriminating rather than incidental. `pytest.raises(Exception)` rather
+    than `raises(RAMSESError)` so that an error from the archive library
+    reaches the assertions instead of escaping the test uncaught.
+
+    Both were checked by neutralising `_safe_child` and running this: on the
+    zip branch the first assertion fails, because CPython strips the ".." and
+    unpacks the entry into the destination; on the tar branch the second
+    fails, with `tarfile.OutsideDestinationError`, because `filter='data'`
+    refuses from inside extraction rather than before it.
+    """
+    with pytest.raises(Exception) as caught:
+        ssa.load_archive(target, into=into)
+    assert list(into.iterdir()) == [], "the destination was written to"
+    assert isinstance(caught.value, RAMSESError), type(caught.value).__name__
+    assert "outside" in str(caught.value)
+
+
 def test_load_archive_refuses_a_tar_entry_that_escapes_the_destination(tmp_path):
-    """Refused up front, and refused before anything is unpacked."""
     payload = tmp_path / "payload"
     payload.write_text("x")
     target = tmp_path / "run.tar.gz"
@@ -2809,35 +2829,22 @@ def test_load_archive_refuses_a_tar_entry_that_escapes_the_destination(tmp_path)
         archive.add(payload, arcname="../escaped.dat")
     into = tmp_path / "unpacked_tar"
     into.mkdir()
-    with pytest.raises(RAMSESError, match="outside"):
-        ssa.load_archive(target, into=into)
-    assert list(into.iterdir()) == []
+    assert_refused_before_unpacking(target, into)
 
 
 def test_load_archive_refuses_a_zip_entry_that_escapes_the_destination(tmp_path):
-    """The two branches are refused for different reasons, so both are tested.
+    """Both containers are tested, because neither library refuses the same way.
 
-    On the tar branch `filter='data'` would refuse this entry by itself, so
-    that test passes even with _safe_child removed. zipfile does not refuse it
-    and does not honour it either: CPython strips the "..", so "../escaped.dat"
-    would unpack as "escaped.dat" inside the destination and nothing would be
-    reported. Neither branch leaks a file, and this test does not pretend
-    otherwise.
-
-    What it pins is the module's own contract, which is stronger than either:
-    an archive naming a path outside the destination is refused, and refused
-    before anything is unpacked. The empty directory below is what says so.
-    With _safe_child gone, this archive would unpack and that assertion would
-    fail.
+    Refusing before unpacking is this module's own contract and is stronger
+    than what either library provides on its own. See
+    :func:`assert_refused_before_unpacking` for which assertion catches which.
     """
     target = tmp_path / "run.zip"
     with zipfile.ZipFile(target, "w") as archive:
         archive.writestr("../escaped.dat", "x")
     into = tmp_path / "unpacked_zip"
     into.mkdir()
-    with pytest.raises(RAMSESError, match="outside"):
-        ssa.load_archive(target, into=into)
-    assert list(into.iterdir()) == []
+    assert_refused_before_unpacking(target, into)
 
 
 def test_manifest_omits_absent_keys():
