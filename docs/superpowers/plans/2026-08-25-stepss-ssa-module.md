@@ -1861,7 +1861,11 @@ def test_run_resolves_relative_input_paths_against_the_callers_directory(
     Every other test names its inputs absolutely, so a wrong entry in
     _INPUT_LISTS would go unnoticed. Here the case is built with bare file
     names from one directory and run in another, which only works if the
-    inputs were made absolute before the working directory changed.
+    inputs were made absolute before the working directory changed, and only
+    if the outputs were left alone so they land where the run does.
+
+    The initialisation trace is the output most easily mistaken for an input,
+    on its name alone, so this gives the case one and checks where it lands.
     """
     data = tmp_path / "data"
     data.mkdir()
@@ -1877,15 +1881,20 @@ def test_run_resolves_relative_input_paths_against_the_callers_directory(
     case.addDst("nothing.dst")
     case.addObs("obs.dat")
     case.addTrj("out.trj")
+    case.addInit("init.trace")
 
     elsewhere = tmp_path / "run"
     res = ssa.run(case, basename="ssa", workdir=elsewhere)
     assert (elsewhere / "ssa_modes.dat").is_file()
     assert len(res.modes) > 0
-    # The trajectory is an output and is deliberately not absolutised, so it
-    # lands in the run's directory rather than beside the caller.
+    # Both are outputs and are deliberately not absolutised, so they land in
+    # the run's directory rather than beside the caller. The init.trace pair
+    # is what fails if the initialisation trace is ever classified as an input
+    # again: absolutising it would resolve it against `data`.
     assert (elsewhere / "out.trj").is_file()
     assert not (data / "out.trj").exists()
+    assert (elsewhere / "init.trace").is_file()
+    assert not (data / "init.trace").exists()
 
 
 def test_a_refused_run_leaves_the_previous_run_intact(tmp_path):
