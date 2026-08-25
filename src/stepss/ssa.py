@@ -35,6 +35,7 @@ the semantics the graphical interface uses.
 
 import os
 from collections import namedtuple
+from copy import deepcopy
 
 import numpy as np
 
@@ -522,6 +523,36 @@ class Results(object):
         self._check_simple(index, allow_degenerate)
         return list(self._shapes.get(index, []))
 
+    @property
+    def state_matrix(self):
+        """The state matrix the engine reduced for this run.
+
+        Lazy rather than captured, because ``nstates`` can reach the engine's
+        ceiling of 5000, at which the dense matrix is 200 MB, and most runs
+        never read it.
+
+        The engine retains one matrix at a time and ``get_state_matrix``
+        refuses only an order mismatch, so a later analysis of a case with the
+        same state count would otherwise be handed back silently. This checks
+        the simulator's analysis counter instead.
+
+        :rtype: numpy.ndarray
+        :raises RAMSESError: if this run was read from disk rather than made
+                             here, or a later analysis has replaced the matrix
+        """
+        if self._ram is None:
+            raise RAMSESError(
+                'RAMSES: the state matrix lives in the engine and is in none of '
+                'the results files, so it is available on a live run made with '
+                'ssa.run() only.')
+        if self._ram._ssaGeneration != self._generation:
+            raise RAMSESError(
+                'RAMSES: a later analysis has replaced the retained state '
+                'matrix; this run was analysis %d and the engine now holds %d. '
+                'Read the state matrix before starting the next analysis.'
+                % (self._generation, self._ram._ssaGeneration))
+        return self._ram.getStateMatrix()
+
     def summary(self):
         """Print the run's header and its mode counts.
 
@@ -788,3 +819,197 @@ def clear_previous_run(directory, basename):
         except OSError:
             stuck.append(name)
     return stuck
+
+
+# Which of a case's file lists name inputs. These are resolved to absolute
+# paths before the working directory changes, so that a case built with
+# relative names keeps working. The output lists are deliberately left alone,
+# so that the trajectory and the traces land in the run's own directory.
+_INPUT_LISTS = ('_dataset', '_dstset', '_obs', '_init')
+
+
+def _absolutise(case):
+    """A copy of *case* whose input paths are absolute.
+
+    The lists are rewritten directly rather than through the ``add`` methods,
+    because those resolve against the current directory and validate on the
+    way in, and this runs before the directory changes.
+
+    :param stepss.cases.cfg case: the caller's case, which is not modified
+    :returns: the copy
+    :rtype: stepss.cases.cfg
+    """
+    copy = deepcopy(case)
+    for name in _INPUT_LISTS:
+        entries = getattr(copy, name, None)
+        if entries:
+            entries[:] = [os.path.abspath(entry) for entry in entries]
+    return copy
+
+
+def _same_file(left, right):
+    """Whether two paths name the same file, whether or not it exists.
+
+    :param str left: one path
+    :param str right: the other
+    :rtype: bool
+    """
+    try:
+        if os.path.exists(left) and os.path.exists(right):
+            return os.path.samefile(left, right)
+    except OSError:
+        pass
+    return (os.path.normcase(os.path.abspath(left))
+            == os.path.normcase(os.path.abspath(right)))
+
+
+def run(case, basename='ssa', t=None, workdir=None, jacobian=False,
+        ram=None, keep_open=False):
+    """Run one small-signal analysis and return its results.
+
+    The case is copied, never modified: it stays usable for an ordinary
+    time-domain run afterwards. The copy is given one extra data file carrying
+    ``$SCHEME DE`` and ``$OMEGA_REF SYN``, read last so that it wins whatever
+    the case set, because the engine refuses the analysis under either of the
+    values a case that says nothing about them lands on.
+
+    Anything already on disk under *basename* is deleted before the run starts,
+    since the only evidence an analysis produced results is that its modes file
+    is there afterwards.
+
+    :param stepss.cases.cfg case: the case to analyse
+    :param str basename: names the three results files
+    :param t: when to linearise, in seconds; defaults to :data:`MIN_TIME`
+    :type t: float or None
+    :param workdir: where to run and where the results land; the current
+                    directory when None. It is created if it does not exist,
+                    and the previous working directory is restored afterwards.
+    :type workdir: str or pathlib.Path or None
+    :param bool jacobian: also write the four Jacobian tables, at the instant
+                          of the reduction. This uses paired disturbance
+                          records rather than the direct entry, because
+                          ``dumpjac`` and ``dumpeig`` are independent flags and
+                          the two direct entries each advance the clock by a
+                          millisecond, so calling them in turn would dump a
+                          Jacobian taken after the reduction rather than at it.
+    :param ram: an existing simulator to run in, or None to make one
+    :type ram: stepss.simulator.sim or None
+    :param bool keep_open: leave the simulation paused instead of finalising
+                           it. A paused simulation is not finished, and loading
+                           another case without finalising silently resumes it,
+                           so this is for a caller who means to go on
+                           interrogating this run.
+    :returns: the run
+    :rtype: Results
+
+    .. note:: When the case carries a disturbance file of its own, *t* must
+              fall before that file's STOP record, because a run that has
+              already stopped cannot be advanced to *t*. That cannot be checked
+              here without parsing the caller's file, so it is stated rather
+              than enforced; the failure is loud, since :meth:`runSsa` refuses
+              a *t* earlier than the simulated time already reached. The
+              generated file used when the case has none stops just after *t*.
+    :raises RAMSESError: if the basename or time is rejected, the generated
+                         settings file would overwrite one of the case's own
+                         data files, a previous run cannot be cleared, or the
+                         analysis produced no modes file
+
+    :Example:
+
+    >>> import stepss
+    >>> from stepss import ssa
+    >>> case = stepss.cfg('cmd.txt')
+    >>> res = ssa.run(case, basename='ssa', workdir='run1')
+    >>> res.electromechanical().table()
+    """
+    if not valid_basename(basename):
+        raise RAMSESError(
+            'RAMSES: the results basename %r cannot be used. It names the three '
+            'results files and is written into the analysis record, so it may '
+            'contain only letters, digits, dot, underscore and hyphen.'
+            % (basename,))
+    when = check_time(MIN_TIME if t is None else t)
+
+    prepared = _absolutise(case)
+    here = os.getcwd()
+    target = here if workdir is None else os.path.abspath(str(workdir))
+    if not os.path.isdir(target):
+        os.makedirs(target)
+
+    settings_path = os.path.join(target, settings_name(basename))
+    # Refused rather than written: a loaded data file of this name is the
+    # caller's, and writing over it would destroy it silently, the run
+    # continuing on the two records that replaced their case.
+    for data_file in prepared.getData():
+        if _same_file(data_file, settings_path):
+            raise RAMSESError(
+                'RAMSES: the run needs to write %s, which is one of the loaded '
+                'data files. Choose a different results basename, or move that '
+                'file, so the analysis does not overwrite it.'
+                % os.path.basename(settings_path))
+
+    owns_sim = ram is None
+    os.chdir(target)
+    try:
+        with open(settings_name(basename), 'w') as handle:
+            handle.write(settings_text())
+        prepared.addData(os.path.abspath(settings_name(basename)))
+
+        if not prepared.getDst():
+            with open(disturbance_name(basename), 'w') as handle:
+                handle.write(disturbance_text(when))
+            prepared.addDst(os.path.abspath(disturbance_name(basename)))
+
+        # Last, after every refusal above, because it destroys the previous run
+        # under this basename: a run that never starts must leave that run
+        # intact.
+        stuck = clear_previous_run(target, basename)
+        if stuck:
+            raise RAMSESError(
+                'RAMSES: a previous "%s" run is still in %s and could not be '
+                'removed: %s. It would be read as this run\'s, so the analysis '
+                'was not started.' % (basename, target, ', '.join(stuck)))
+
+        if ram is None:
+            from .simulator import sim
+            ram = sim()
+        ram.execSim(prepared, 0.0)
+        if jacobian:
+            # JAC and EIG fire at the same t and the engine acts on them in
+            # that order within one step (simul_decomp: dump_jacobian then
+            # dump_eig), so the dumped Jacobian is necessarily the one the
+            # analysis reduced rather than one taken a moment later.
+            if when > ram.getSimTime():
+                ram.contSim(when)
+            ram.addDisturb(when, "JAC '%s'" % basename)
+            ram.addDisturb(when, "EIG '%s'" % basename)
+            ram.contSim(when + _STOP_MARGIN)
+            ram._noteSsaAnalysis()
+        else:
+            ram.runSsa(basename, when)
+        generation = ram._ssaGeneration
+
+        modes_path = os.path.join(target, basename + RESULT_SUFFIXES[0])
+        if not os.path.isfile(modes_path):
+            raise RAMSESError(
+                'RAMSES: no results were produced. The run was given $SCHEME DE '
+                'and $OMEGA_REF SYN, so the reason is elsewhere: usually a '
+                'system with more states than $EIG_MAX_STATES allows, or one '
+                'with no differential states at all. The engine says which: %s'
+                % ram.getLastErr())
+
+        modes, header = _read_modes(_read_text(modes_path))
+        return Results(modes, header,
+                       _read_pf(_optional_text(target, basename, '_pf.dat')),
+                       _read_ms(_optional_text(target, basename, '_ms.dat')),
+                       target, basename, ram=ram, generation=generation)
+    finally:
+        if ram is not None and owns_sim and not keep_open:
+            try:
+                ram.endSim()
+            except RAMSESError:
+                # A run that already stopped, or one that failed before it
+                # started, has nothing to finalise. The failure worth reporting
+                # is the one on the way out of the try block, not this one.
+                pass
+        os.chdir(here)
