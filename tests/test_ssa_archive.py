@@ -26,7 +26,7 @@ def res(tmp_path):
 @pytest.mark.parametrize("name", ["run.zip", "run.tar.gz"])
 def test_round_trip(res, tmp_path, name):
     target = tmp_path / name
-    absent = ssa.save(res, target)
+    absent = ssa.save_archive(res, target)
     assert set(absent) == set(ssa.members("ssa")[3:]), "no Jacobian was written"
 
     loaded, manifest = ssa.load_archive(target)
@@ -44,7 +44,7 @@ def test_results_save_is_the_same_call(res, tmp_path):
 
 def test_zip_puts_the_manifest_first_under_a_directory_named_for_the_run(res, tmp_path):
     target = tmp_path / "run.zip"
-    ssa.save(res, target)
+    ssa.save_archive(res, target)
     with zipfile.ZipFile(target) as archive:
         names = [n for n in archive.namelist() if not n.endswith("/")]
     assert names[0] == "ssa/" + ssa.MANIFEST_NAME
@@ -54,7 +54,7 @@ def test_zip_puts_the_manifest_first_under_a_directory_named_for_the_run(res, tm
 def test_save_refuses_a_run_whose_modes_file_is_gone(res, tmp_path):
     Path(res.directory, "ssa_modes.dat").unlink()
     with pytest.raises(RAMSESError, match="no analysis to archive"):
-        ssa.save(res, tmp_path / "run.zip")
+        ssa.save_archive(res, tmp_path / "run.zip")
 
 
 def test_save_refuses_a_tar_whose_member_name_is_too_long(tmp_path):
@@ -68,10 +68,10 @@ def test_save_refuses_a_tar_whose_member_name_is_too_long(tmp_path):
                     run / ("%s_%s.dat" % (long_name, suffix)))
     long_res = ssa.load(run, long_name)
     with pytest.raises(RAMSESError, match="100-byte"):
-        ssa.save(long_res, tmp_path / "run.tar.gz")
+        ssa.save_archive(long_res, tmp_path / "run.tar.gz")
     assert not (tmp_path / "run.tar.gz").exists()
     # The zip path has no such limit, so the same run must still save that way.
-    ssa.save(long_res, tmp_path / "run.zip")
+    ssa.save_archive(long_res, tmp_path / "run.zip")
     assert zipfile.is_zipfile(tmp_path / "run.zip")
 
 
@@ -200,7 +200,7 @@ def test_tar_round_trip_without_the_extraction_filter(res, tmp_path, monkeypatch
     """
     monkeypatch.delattr(tarfile, "data_filter", raising=False)
     target = tmp_path / "run.tar.gz"
-    ssa.save(res, target)
+    ssa.save_archive(res, target)
     loaded, manifest = ssa.load_archive(target)
     assert manifest.basename == "ssa"
     assert len(loaded.modes) == len(res.modes)
@@ -230,3 +230,27 @@ def test_the_escape_guard_still_holds_without_the_extraction_filter(
     with pytest.raises(RAMSESError, match="outside"):
         ssa.load_archive(target, into=into)
     assert list(into.iterdir()) == []
+
+
+def test_save_is_kept_as_an_alias_for_save_archive(res, tmp_path):
+    """v3.81.1 and v3.81.2 shipped the writer as `save`, so the name stays.
+
+    Not merely the same behaviour: the same object, so anything holding a
+    reference to one is holding the other and the two can never drift.
+    """
+    assert ssa.save is ssa.save_archive
+    target = tmp_path / "run.zip"
+    ssa.save(res, target)
+    assert zipfile.is_zipfile(target)
+
+
+def test_results_save_keeps_its_short_name(res, tmp_path):
+    """On a run object there is only one thing saving can mean.
+
+    The method deliberately does not follow the module function's rename, and
+    it must go on delegating to it rather than growing a second implementation.
+    """
+    target = tmp_path / "run.tar.gz"
+    absent = res.save(target)
+    assert tarfile.is_tarfile(target)
+    assert set(absent) == set(ssa.members("ssa")[3:])

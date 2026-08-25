@@ -47,7 +47,7 @@ from .globals import RAMSESError
 
 __all__ = [
     'Results', 'ModeView', 'Participation', 'ModeShapeEntry', 'Manifest',
-    'run', 'load', 'basenames', 'save', 'load_archive',
+    'run', 'load', 'basenames', 'save_archive', 'save', 'load_archive',
     'valid_basename', 'check_time', 'settings_text', 'settings_name',
     'disturbance_text', 'disturbance_name', 'members', 'clear_previous_run',
     'FORMAT_VERSION', 'ARCHIVE_FORMAT_VERSION', 'MANIFEST_NAME', 'MODE_DTYPE',
@@ -715,7 +715,7 @@ class Results(object):
             print('  participation written down to %g ($PF_THRES)' % self.pf_floor)
 
     def save(self, path, saved_by=None):
-        """Write this run to a ``.ssa`` archive. See :func:`save`.
+        """Write this run to a ``.ssa`` archive. See :func:`save_archive`.
 
         :param path: where to write it
         :type path: str or pathlib.Path
@@ -724,7 +724,7 @@ class Results(object):
         :returns: the member names that were not on disk
         :rtype: list of str
         """
-        return save(self, path, saved_by)
+        return save_archive(self, path, saved_by)
 
     def splane(self, **kwargs):
         """Draw every mode. See :meth:`ModeView.splane`.
@@ -1477,7 +1477,7 @@ def _float_or_none(token):
         return None
 
 
-def save(results, path, saved_by=None):
+def save_archive(results, path, saved_by=None):
     """Write one run to a ``.ssa`` archive the graphical interface can open.
 
     The format is chosen from the file name: ``.tar.gz`` or ``.tgz`` for a
@@ -1553,6 +1553,17 @@ def save(results, path, saved_by=None):
             os.remove(part)
         raise
     return absent
+
+
+#: The writer's old name, kept because v3.81.1 and v3.81.2 shipped under it.
+#:
+#: The pair reads better as ``load_archive``/``save_archive``: someone who has
+#: just written one and wants the other looks for the matching name rather than
+#: for the shorter one, and the reason ``save`` needed no qualifier, that this
+#: module writes only archives while it loads from two places, is invisible at
+#: the call site. :meth:`Results.save` keeps its short name, since on a run
+#: object there is only one thing saving can mean.
+save = save_archive
 
 
 def load_archive(path, into=None):
