@@ -140,9 +140,15 @@ def test_state_matrix_is_available_from_a_live_run(tmp_path):
     assert res.state_matrix.shape == (res.nstates, res.nstates)
 
 
-def test_state_matrix_refuses_after_a_later_analysis(tmp_path):
+def test_state_matrix_refuses_after_a_later_analysis(tmp_path, monkeypatch):
     """The engine retains one at a time and checks only the order."""
     case = kundur_case(tmp_path, "dyn_noPSS.dat")
+    # The second analysis is triggered directly rather than through ssa.run(),
+    # so nothing changes the working directory for it and the engine would
+    # write its three files wherever pytest was started, which is the
+    # repository root. This is the only test that reaches the engine outside
+    # ssa.run(), and so the only one that needs this.
+    monkeypatch.chdir(tmp_path)
     ram = stepss.sim()
     first = ssa.run(case, basename="one", workdir=tmp_path, ram=ram, keep_open=True)
     assert first.state_matrix.shape[0] == first.nstates
