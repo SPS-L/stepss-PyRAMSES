@@ -34,6 +34,10 @@ the semantics the graphical interface uses.
 """
 
 import os
+import io
+import tarfile
+import tempfile
+import zipfile
 from collections import namedtuple
 from copy import deepcopy
 
@@ -650,6 +654,18 @@ class Results(object):
                  int((~self.modes['simple']).sum())))
         if self.pf_floor is not None:
             print('  participation written down to %g ($PF_THRES)' % self.pf_floor)
+
+    def save(self, path, saved_by=None):
+        """Write this run to a ``.ssa`` archive. See :func:`save`.
+
+        :param path: where to write it
+        :type path: str or pathlib.Path
+        :param saved_by: what to record as the writer
+        :type saved_by: str or None
+        :returns: the member names that were not on disk
+        :rtype: list of str
+        """
+        return save(self, path, saved_by)
 
     def splane(self, **kwargs):
         """Draw every mode. See :meth:`ModeView.splane`.
@@ -1270,3 +1286,277 @@ def run(case, basename='ssa', t=None, workdir=None, jacobian=False,
                     pass
         finally:
             os.chdir(here)
+
+
+#: The archive format this module writes, and the newest it reads.
+ARCHIVE_FORMAT_VERSION = 1
+
+#: Names the manifest inside an archive.
+MANIFEST_NAME = 'stepss-ssa.txt'
+
+_MANIFEST_MAGIC = '# STEPSS small-signal archive v'
+
+
+class Manifest(namedtuple('Manifest', 'basename engine_version time saved_by')):
+    """What an archive records about the run inside it.
+
+    Every field but the basename may be None, and None means "not recorded"
+    rather than zero. There are no threshold fields: the analysis record has no
+    thresholds to record, and the one floor the engine applies is written into
+    the modes file itself as ``pf_floor``.
+    """
+
+    __slots__ = ()
+
+    def text(self):
+        """The manifest file's contents.
+
+        A key per line, absent keys omitted rather than written as zero, read
+        back by name so that a later format can add one without breaking this.
+        The prose at the top is for whoever opens the archive in a file manager
+        and wants to know what they have without installing anything.
+
+        :returns: the file text, newline terminated
+        :rtype: str
+        """
+        lines = [
+            _MANIFEST_MAGIC + str(ARCHIVE_FORMAT_VERSION),
+            '#',
+            '# One small-signal run, as it was analysed: the dynamic Jacobian the',
+            '# engine reduced, the modes, participation factors and mode shapes',
+            '# it produced, and this file. The data files, solver settings and',
+            '# disturbance that produced them are NOT here, so this records a',
+            '# result rather than reproducing it.',
+            '#',
+            '# Open it with Load dynamic Jacobian on the STEPSS Analysis tab, or',
+            '# with stepss.ssa.load_archive() in Python.',
+            '#',
+            'basename ' + self.basename,
+        ]
+        if self.engine_version is not None:
+            lines.append('engine_version %.2f' % self.engine_version)
+        if self.time is not None:
+            lines.append('t %.6f' % self.time)
+        if self.saved_by:
+            lines.append('saved_by ' + self.saved_by)
+        return '\n'.join(lines) + '\n'
+
+    @classmethod
+    def parse(cls, text):
+        """Read a manifest back.
+
+        :param str text: the manifest file's contents
+        :returns: the run it describes
+        :rtype: Manifest
+        :raises RAMSESError: if the text is not a manifest, was written by a
+                             newer STEPSS, or names a basename this module
+                             would refuse to write
+        """
+        version = -1
+        fields = {'basename': None, 'engine_version': None, 't': None,
+                  'saved_by': None}
+        for raw in text.splitlines():
+            line = raw.strip()
+            if not line:
+                continue
+            if line.startswith(_MANIFEST_MAGIC):
+                tail = line[len(_MANIFEST_MAGIC):].strip()
+                version = int(tail) if tail.isdigit() else -1
+                continue
+            if line[0] == '#':
+                continue
+            key, _, value = line.partition(' ')
+            if key in fields:
+                fields[key] = value.strip()
+        if version < 0:
+            raise RAMSESError('RAMSES: its %s does not start with "%s".'
+                              % (MANIFEST_NAME, _MANIFEST_MAGIC))
+        if version > ARCHIVE_FORMAT_VERSION:
+            raise RAMSESError('RAMSES: it is in archive format v%d and stepss '
+                              'reads v%d. Update stepss to open it.'
+                              % (version, ARCHIVE_FORMAT_VERSION))
+        # The basename becomes a file name the moment it is used, and it
+        # arrives from a file someone else wrote, so it is held to exactly the
+        # rule this module holds its own basenames to rather than trusted.
+        if not valid_basename(fields['basename']):
+            raise RAMSESError('RAMSES: its %s names an unusable basename %r.'
+                              % (MANIFEST_NAME, fields['basename']))
+        return cls(fields['basename'],
+                   _float_or_none(fields['engine_version']),
+                   _float_or_none(fields['t']),
+                   fields['saved_by'])
+
+
+def _float_or_none(token):
+    """*token* as a float, or None when it is absent or does not parse.
+
+    :param token: the text
+    :type token: str or None
+    :rtype: float or None
+    """
+    if token is None:
+        return None
+    try:
+        return float(token)
+    except ValueError:
+        return None
+
+
+def save(results, path, saved_by=None):
+    """Write one run to a ``.ssa`` archive the graphical interface can open.
+
+    The format is chosen from the file name: ``.tar.gz`` or ``.tgz`` for a
+    gzipped tar, anything else for a zip. Everything goes under one directory
+    named for the run, so unpacking by hand produces a folder rather than eight
+    loose files, and the manifest is written first so that a listing puts what
+    the archive is at the top.
+
+    :param Results results: the run to archive
+    :param path: where to write it
+    :type path: str or pathlib.Path
+    :param saved_by: what to record as the writer; defaults to this package and
+                     its version
+    :type saved_by: str or None
+    :returns: the member names that were not on disk, in :func:`members` order.
+              The three results files are optional in the sense that
+              ``_pf.dat`` and ``_ms.dat`` may legitimately be absent, and the
+              four Jacobian tables are absent from every run made without
+              ``jacobian=True``.
+    :rtype: list of str
+    :raises RAMSESError: if the run has no modes file to archive
+    """
+    from . import __version__
+
+    directory = getattr(results, 'directory', None)
+    basename = getattr(results, 'basename', None)
+    if not directory or not basename:
+        raise RAMSESError('RAMSES: this Results names no directory to archive.')
+    modes_path = os.path.join(directory, basename + RESULT_SUFFIXES[0])
+    if not os.path.isfile(modes_path):
+        raise RAMSESError('RAMSES: there is no %s in %s, so there is no analysis '
+                          'to archive.'
+                          % (os.path.basename(modes_path), directory))
+
+    present, absent = [], []
+    for name in members(basename):
+        (present if os.path.isfile(os.path.join(directory, name))
+         else absent).append(name)
+
+    manifest = Manifest(basename, None, results.time,
+                        saved_by or ('stepss %s' % __version__)).text()
+    target = str(path)
+    prefix = basename + '/'
+    if _is_tar_name(target):
+        with tarfile.open(target, 'w:gz') as archive:
+            _tar_add_bytes(archive, prefix + MANIFEST_NAME,
+                           manifest.encode('utf-8'))
+            for name in present:
+                archive.add(os.path.join(directory, name), arcname=prefix + name)
+    else:
+        with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr(prefix + MANIFEST_NAME, manifest)
+            for name in present:
+                archive.write(os.path.join(directory, name), arcname=prefix + name)
+    return absent
+
+
+def load_archive(path, into=None):
+    """Unpack a ``.ssa`` archive and read the run in it.
+
+    :param path: the archive, in ``.zip`` or gzipped tar
+    :type path: str or pathlib.Path
+    :param into: where to unpack; a temporary directory when None. The results
+                 files are read from there and the returned :class:`Results`
+                 keeps naming that directory, which is why the default one is
+                 not cleaned up here.
+    :type into: str or pathlib.Path or None
+    :returns: ``(results, manifest)``
+    :rtype: tuple
+    :raises RAMSESError: if the file is neither a zip nor a gzipped tar, holds
+                         no manifest, is in a newer format, names an unusable
+                         basename, or carries an entry that would be written
+                         outside the destination
+    """
+    target = str(path)
+    into = tempfile.mkdtemp(prefix='stepss-ssa-') if into is None else str(into)
+    if zipfile.is_zipfile(target):
+        with zipfile.ZipFile(target) as archive:
+            for name in archive.namelist():
+                _safe_child(into, name)
+            archive.extractall(into)
+    elif tarfile.is_tarfile(target):
+        with tarfile.open(target, 'r:*') as archive:
+            for member in archive.getmembers():
+                _safe_child(into, member.name)
+            archive.extractall(into)
+    else:
+        raise RAMSESError('RAMSES: could not open %s: it is neither a zip nor a '
+                          'gzipped tar, so it is not a small-signal archive.'
+                          % os.path.basename(target))
+
+    manifest_path = _find_manifest(into)
+    if manifest_path is None:
+        raise RAMSESError('RAMSES: could not open %s: it carries no %s, so it '
+                          'was not written by STEPSS.'
+                          % (os.path.basename(target), MANIFEST_NAME))
+    manifest = Manifest.parse(_read_text(manifest_path))
+    return load(os.path.dirname(manifest_path), manifest.basename), manifest
+
+
+def _is_tar_name(name):
+    """Whether *name* spells a gzipped tar.
+
+    ``.tgz`` is accepted on the way in because many tools produce it, and never
+    written: one spelling per format keeps the writer honest about what it made.
+
+    :param str name: the file name
+    :rtype: bool
+    """
+    lower = name.lower()
+    return lower.endswith('.tar.gz') or lower.endswith('.tgz')
+
+
+def _tar_add_bytes(archive, name, payload):
+    """Add an in-memory member to an open tar archive.
+
+    :param tarfile.TarFile archive: the archive
+    :param str name: the member name
+    :param bytes payload: its contents
+    """
+    info = tarfile.TarInfo(name)
+    info.size = len(payload)
+    archive.addfile(info, io.BytesIO(payload))
+
+
+def _safe_child(into, entry_name):
+    """Refuse an archive entry that would be written outside *into*.
+
+    :param str into: the destination directory
+    :param str entry_name: the entry's name as the archive spells it
+    :returns: the resolved path
+    :rtype: str
+    :raises RAMSESError: if the entry escapes the destination
+    """
+    root = os.path.realpath(into)
+    resolved = os.path.realpath(os.path.join(root, entry_name))
+    if resolved != root and not resolved.startswith(root + os.sep):
+        raise RAMSESError('RAMSES: the archive entry %r would be written outside '
+                          'the destination directory.' % (entry_name,))
+    return resolved
+
+
+def _find_manifest(root):
+    """The manifest inside an unpacked archive, at the root or one level down.
+
+    :param str root: the unpacked directory
+    :returns: the path, or None when there is none
+    :rtype: str or None
+    """
+    direct = os.path.join(root, MANIFEST_NAME)
+    if os.path.isfile(direct):
+        return direct
+    for name in sorted(os.listdir(root)):
+        nested = os.path.join(root, name, MANIFEST_NAME)
+        if os.path.isfile(nested):
+            return nested
+    return None
