@@ -94,30 +94,43 @@ def test_load_archive_refuses_an_unusable_basename(tmp_path):
 
 
 def test_load_archive_refuses_a_tar_entry_that_escapes_the_destination(tmp_path):
+    """Refused up front, and refused before anything is unpacked."""
     payload = tmp_path / "payload"
     payload.write_text("x")
     target = tmp_path / "run.tar.gz"
     with tarfile.open(target, "w:gz") as archive:
         archive.add(payload, arcname="../escaped.dat")
+    into = tmp_path / "unpacked_tar"
+    into.mkdir()
     with pytest.raises(RAMSESError, match="outside"):
-        ssa.load_archive(target)
+        ssa.load_archive(target, into=into)
+    assert list(into.iterdir()) == []
 
 
 def test_load_archive_refuses_a_zip_entry_that_escapes_the_destination(tmp_path):
-    """The zip branch is the one where _safe_child is the only protection.
+    """The two branches are refused for different reasons, so both are tested.
 
-    tarfile's filter='data' would refuse this on its own, so the tar test above
-    passes even with the guard removed. zipfile has no equivalent: a bare
-    extractall writes ../escaped.dat outside the destination and reports
-    nothing. This test is therefore the only thing standing behind _safe_child
-    on the branch where it matters most.
+    On the tar branch `filter='data'` would refuse this entry by itself, so
+    that test passes even with _safe_child removed. zipfile does not refuse it
+    and does not honour it either: CPython strips the "..", so "../escaped.dat"
+    would unpack as "escaped.dat" inside the destination and nothing would be
+    reported. Neither branch leaks a file, and this test does not pretend
+    otherwise.
+
+    What it pins is the module's own contract, which is stronger than either:
+    an archive naming a path outside the destination is refused, and refused
+    before anything is unpacked. The empty directory below is what says so.
+    With _safe_child gone, this archive would unpack and that assertion would
+    fail.
     """
     target = tmp_path / "run.zip"
     with zipfile.ZipFile(target, "w") as archive:
         archive.writestr("../escaped.dat", "x")
+    into = tmp_path / "unpacked_zip"
+    into.mkdir()
     with pytest.raises(RAMSESError, match="outside"):
-        ssa.load_archive(target)
-    assert not (tmp_path.parent / "escaped.dat").exists()
+        ssa.load_archive(target, into=into)
+    assert list(into.iterdir()) == []
 
 
 def test_manifest_omits_absent_keys():
