@@ -1446,17 +1446,33 @@ def save(results, path, saved_by=None):
                         saved_by or ('stepss %s' % __version__)).text()
     target = str(path)
     prefix = basename + '/'
-    if _is_tar_name(target):
-        with tarfile.open(target, 'w:gz') as archive:
-            _tar_add_bytes(archive, prefix + MANIFEST_NAME,
-                           manifest.encode('utf-8'))
-            for name in present:
-                archive.add(os.path.join(directory, name), arcname=prefix + name)
-    else:
-        with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr(prefix + MANIFEST_NAME, manifest)
-            for name in present:
-                archive.write(os.path.join(directory, name), arcname=prefix + name)
+    # Written to a .part file and moved into place, as the Java side does.
+    # A failure partway through, a full disk or a permission error, would
+    # otherwise leave a truncated file at the requested path that looks like
+    # an archive until someone tries to open it.
+    part = target + '.part'
+    try:
+        if _is_tar_name(target):
+            with tarfile.open(part, 'w:gz') as archive:
+                _tar_add_bytes(archive, prefix + MANIFEST_NAME,
+                               manifest.encode('utf-8'))
+                for name in present:
+                    archive.add(os.path.join(directory, name),
+                                arcname=prefix + name)
+        else:
+            with zipfile.ZipFile(part, 'w', zipfile.ZIP_DEFLATED) as archive:
+                archive.writestr(prefix + MANIFEST_NAME, manifest)
+                for name in present:
+                    archive.write(os.path.join(directory, name),
+                                  arcname=prefix + name)
+        os.replace(part, target)
+    except BaseException:
+        # Nothing survives a failure, so a retry starts from a clean slate.
+        # BaseException rather than Exception: an interrupt partway through a
+        # write leaves the same debris as an error does.
+        if os.path.exists(part):
+            os.remove(part)
+        raise
     return absent
 
 

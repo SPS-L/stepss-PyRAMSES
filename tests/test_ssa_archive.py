@@ -93,7 +93,7 @@ def test_load_archive_refuses_an_unusable_basename(tmp_path):
         ssa.load_archive(target)
 
 
-def test_load_archive_refuses_an_entry_that_escapes_the_destination(tmp_path):
+def test_load_archive_refuses_a_tar_entry_that_escapes_the_destination(tmp_path):
     payload = tmp_path / "payload"
     payload.write_text("x")
     target = tmp_path / "run.tar.gz"
@@ -101,6 +101,23 @@ def test_load_archive_refuses_an_entry_that_escapes_the_destination(tmp_path):
         archive.add(payload, arcname="../escaped.dat")
     with pytest.raises(RAMSESError, match="outside"):
         ssa.load_archive(target)
+
+
+def test_load_archive_refuses_a_zip_entry_that_escapes_the_destination(tmp_path):
+    """The zip branch is the one where _safe_child is the only protection.
+
+    tarfile's filter='data' would refuse this on its own, so the tar test above
+    passes even with the guard removed. zipfile has no equivalent: a bare
+    extractall writes ../escaped.dat outside the destination and reports
+    nothing. This test is therefore the only thing standing behind _safe_child
+    on the branch where it matters most.
+    """
+    target = tmp_path / "run.zip"
+    with zipfile.ZipFile(target, "w") as archive:
+        archive.writestr("../escaped.dat", "x")
+    with pytest.raises(RAMSESError, match="outside"):
+        ssa.load_archive(target)
+    assert not (tmp_path.parent / "escaped.dat").exists()
 
 
 def test_manifest_omits_absent_keys():
