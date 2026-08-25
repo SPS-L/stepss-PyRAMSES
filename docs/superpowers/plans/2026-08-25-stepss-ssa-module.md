@@ -450,7 +450,7 @@ and add `"ssa"` to `__all__`, after `"helios"`.
 - [ ] **Step 6: Run the tests to verify they pass**
 
 Run: `pytest tests/test_ssa_parsers.py -v`
-Expected: 9 passed.
+Expected: every test in the file passes, none skipped, none xfailed. The count is not a requirement: several tests are parametrised, so the number pytest reports is larger than the number of test functions.
 
 Run: `pytest tests/ -v -k "not nordic"`
 Expected: PASS, nothing else broken by the new import.
@@ -632,7 +632,7 @@ def _read_ms(text):
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `pytest tests/test_ssa_parsers.py -v`
-Expected: 15 passed.
+Expected: every test in the file passes, none skipped, none xfailed. The count is not a requirement: several tests are parametrised, so the number pytest reports is larger than the number of test functions.
 
 - [ ] **Step 5: Commit**
 
@@ -1106,7 +1106,7 @@ def _optional_text(directory, basename, suffix):
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `pytest tests/test_ssa_results.py -v`
-Expected: 16 passed.
+Expected: every test in the file passes, none skipped, none xfailed. The count is not a requirement: several tests are parametrised, so the number pytest reports is larger than the number of test functions.
 
 - [ ] **Step 5: Commit**
 
@@ -1438,7 +1438,7 @@ def clear_previous_run(directory, basename):
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `pytest tests/test_ssa_run_helpers.py -v`
-Expected: 21 passed.
+Expected: every test in the file passes, none skipped, none xfailed. The count is not a requirement: several tests are parametrised, so the number pytest reports is larger than the number of test functions.
 
 - [ ] **Step 5: Commit**
 
@@ -1739,7 +1739,7 @@ In `src/stepss/simulator.py`, after `getJac`, add:
 - [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `pytest tests/test_ssa_engine.py -v`
-Expected: 11 passed.
+Expected: every test in the file passes, none skipped, none xfailed. The count is not a requirement: several tests are parametrised, so the number pytest reports is larger than the number of test functions.
 
 - [ ] **Step 6: Commit**
 
@@ -2169,7 +2169,7 @@ from copy import deepcopy
 - [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `pytest tests/test_ssa_driver.py -v`
-Expected: 13 passed.
+Expected: every test in the file passes, none skipped, none xfailed. The count is not a requirement: several tests are parametrised, so the number pytest reports is larger than the number of test functions.
 
 Run: `pytest tests/ -v -k "not nordic"`
 Expected: PASS.
@@ -2528,7 +2528,7 @@ def _attach_splane_interaction(ax, view, home):
 - [ ] **Step 6: Run the tests to verify they pass**
 
 Run: `pytest tests/test_ssa_plots.py -v`
-Expected: 9 passed.
+Expected: every test in the file passes, none skipped, none xfailed. The count is not a requirement: several tests are parametrised, so the number pytest reports is larger than the number of test functions.
 
 - [ ] **Step 7: Check the interaction by hand**
 
@@ -3007,7 +3007,7 @@ import zipfile
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `pytest tests/test_ssa_archive.py -v`
-Expected: 14 passed.
+Expected: every test in the file passes, none skipped, none xfailed. The count is not a requirement: several tests are parametrised, so the number pytest reports is larger than the number of test functions.
 
 Run: `pytest tests/ -v -k "not nordic"`
 Expected: PASS.
