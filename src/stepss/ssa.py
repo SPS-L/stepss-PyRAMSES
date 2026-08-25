@@ -608,3 +608,183 @@ def _optional_text(directory, basename, suffix):
     """
     path = os.path.join(str(directory), basename + suffix)
     return _read_text(path) if os.path.isfile(path) else ''
+
+
+#: What is appended to a run's basename to name the generated settings file.
+#: It mirrors the disturbance file the same run generates, and cannot collide
+#: with a results file or a Jacobian table, all of which begin with an
+#: underscore.
+SETTINGS_SUFFIX = 'Eig.dat'
+
+#: What is appended to a run's basename to name the generated disturbance file.
+DISTURBANCE_SUFFIX = 'Eig.dst'
+
+#: Gap between the analysis and the STOP record. The analysis is complete when
+#: it returns, so this only has to be positive.
+_STOP_MARGIN = 0.010
+
+_BASENAME_OK = frozenset(
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-')
+
+
+def valid_basename(basename):
+    """Whether *basename* is safe as both a file name stem and a quoted record.
+
+    An apostrophe would terminate the analysis record's quoted argument early
+    and the engine would write nothing, and a path separator would put the
+    results where the loader does not look.
+
+    :param basename: the candidate
+    :returns: True when it may be used
+    :rtype: bool
+    """
+    if not basename or not isinstance(basename, str):
+        return False
+    return all(char in _BASENAME_OK for char in basename)
+
+
+def check_time(t):
+    """Validate an analysis time.
+
+    :param t: the time in seconds
+    :returns: the time as a float
+    :rtype: float
+    :raises RAMSESError: if it is not a finite number, or is earlier than
+                         :data:`MIN_TIME`
+    """
+    try:
+        value = float(t)
+    except (TypeError, ValueError):
+        raise RAMSESError('RAMSES: the analysis time must be a number, not %r'
+                          % (t,))
+    if value != value or value in (float('inf'), float('-inf')):
+        raise RAMSESError('RAMSES: the analysis time must be a finite number.')
+    if value < MIN_TIME:
+        raise RAMSESError('RAMSES: the analysis time must be at least %g s; the '
+                          'engine needs at least one step before it can apply '
+                          'an event.' % MIN_TIME)
+    return value
+
+
+def settings_text():
+    """The solver settings a small-signal run is given, read after the case's own.
+
+    Two records and nothing else. Every record here overrides whatever the case
+    set, so anything beyond what the analysis requires would silently change
+    the run for no reason. ``$EIG_MAX_STATES`` in particular is deliberately
+    absent: it is a memory guard rather than a correctness one, and the
+    eigensolve holds nine times the square of the state count in doubles at its
+    peak, so raising it on the caller's behalf would trade a clear refusal for
+    an out-of-memory kill.
+
+    :returns: the file text, newline terminated
+    :rtype: str
+    """
+    return ('# Written by stepss for the small-signal run, and read after the\n'
+            "# case's own data files. The engine keeps the last record of each\n"
+            '# kind it reads, so these two are the ones the analysis runs under\n'
+            '# whatever the case set. Nothing else here is changed.\n'
+            '\n'
+            '$SCHEME DE                         ;\n'
+            '$OMEGA_REF SYN                     ;\n')
+
+
+def settings_name(basename):
+    """What the generated settings file is called for a given run.
+
+    :param str basename: the run's basename
+    :returns: the file name, with no directory part
+    :rtype: str
+    :raises RAMSESError: if the basename is rejected
+    """
+    if not valid_basename(basename):
+        raise RAMSESError('RAMSES: invalid results basename %r' % (basename,))
+    return basename + SETTINGS_SUFFIX
+
+
+def disturbance_name(basename):
+    """What the generated disturbance file is called for a given run.
+
+    :param str basename: the run's basename
+    :returns: the file name, with no directory part
+    :rtype: str
+    :raises RAMSESError: if the basename is rejected
+    """
+    if not valid_basename(basename):
+        raise RAMSESError('RAMSES: invalid results basename %r' % (basename,))
+    return basename + DISTURBANCE_SUFFIX
+
+
+def disturbance_text(t):
+    """A disturbance file carrying no events, ending just after *t*.
+
+    A disturbance file is mandatory even when the analysis is injected from
+    Python, and this one deliberately carries no events: the engine linearises
+    about whatever state the system is in when the analysis fires, so an event
+    before then would describe that instant rather than an operating point.
+    Running to a later time with no events lets the initialisation settle and
+    linearises about the same operating point.
+
+    :param float t: the analysis time in seconds
+    :returns: the file text, newline terminated
+    :rtype: str
+    :raises RAMSESError: if the time is rejected
+    """
+    stop = check_time(t) + _STOP_MARGIN
+    # Fixed point rather than repr, which emits scientific notation for small
+    # values: the engine reads these records list-directed and would accept
+    # 1.0E-3, but a plain decimal is what every other disturbance file in this
+    # project uses and is what a reader comparing the two will expect.
+    return ('0.000 CONTINUE SOLVER TR 0.010 0.001 0. ALL\n'
+            '%.6f STOP\n' % stop)
+
+
+def members(basename):
+    """Every file a run of *basename* writes, results first.
+
+    This is also exactly what an archive of the run carries besides its
+    manifest, and exactly what :func:`clear_previous_run` deletes: the files a
+    run writes and the files an archive of it holds are the same files.
+
+    :param str basename: the run's basename
+    :returns: the file names, with no directory part
+    :rtype: tuple of str
+    """
+    return tuple(basename + suffix
+                 for suffix in RESULT_SUFFIXES + JACOBIAN_SUFFIXES)
+
+
+def clear_previous_run(directory, basename):
+    """Delete what a previous run of *basename* left, and report what would not go.
+
+    Why a run has to start by doing this. The engine writes its results itself
+    and reports nothing on the way out about whether it managed to, so the only
+    evidence a caller has is whether the modes file is on disk afterwards. A
+    run whose initialisation failed writes nothing at all, and in a directory
+    already holding an earlier run under the same basename that test passes on
+    the earlier run's file. Clearing first is what makes "the modes file is
+    there" mean "this run wrote it".
+
+    Nothing else in the directory is touched: the basename exists so that
+    several runs can share one directory, and the case's own data files usually
+    live there too.
+
+    :param directory: where the run will write, which need not exist
+    :type directory: str or pathlib.Path
+    :param str basename: the run's basename
+    :returns: the names still present, in :func:`members` order; empty when the
+              directory is clear
+    :rtype: list of str
+    """
+    stuck = []
+    for name in members(basename):
+        path = os.path.join(str(directory), name)
+        # exists() first, so that "was never there" and "is there and will not
+        # go" stay distinguishable: only the second is a reason to refuse a run.
+        if not os.path.exists(path):
+            continue
+        try:
+            os.remove(path)
+        except OSError:
+            stuck.append(name)
+    return stuck
